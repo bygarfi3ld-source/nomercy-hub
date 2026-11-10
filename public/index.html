@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fbfaf9">
+<meta name="description" content="NoMercy Hub – Finde FFAs, Baseraids und Community-Events auf HugoSMP. Ein unabhängiges Community-Projekt.">
+<title>NoMercy Hub · HugoSMP Events</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="site-shell">
+<header class="topbar">
+  <a href="#events" class="brand" data-nav="events" aria-label="NoMercy Hub Startseite">
+   <span class="brand-symbol"><svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true"><path d="M5 32V8h7l8 12 8-12h7v24h-7V20l-8 11-8-11v12Z" fill="currentColor"/></svg></span>
+   <span class="brand-text"><strong>NoMercy<span class="brand-dot">.</span></strong><small>COMMUNITY HUB</small></span>
+  </a>
+  <nav class="main-nav" aria-label="Hauptnavigation">
+   <button class="nav-link active" data-page="events">Events</button>
+   <button class="nav-link" data-page="services">Services</button>
+   <button class="nav-link" data-page="safety">Sicherheit</button>
+   <button class="nav-link" data-page="mine">Meine Events</button>
+  </nav>
+  <div class="header-actions"><span class="server-pill"><span class="live-dot"></span> HUGOSMP <span class="server-pill-sub">· Community-Projekt</span></span><button id="accountButton" class="btn btn-light btn-small">Anmelden</button><button id="topCreate" class="btn btn-dark btn-small"><span class="plus">＋</span> Event erstellen</button></div>
+  <button id="mobileMenu" class="hamburger" aria-label="Menü öffnen" aria-expanded="false"><span></span><span></span><span></span></button>
+</header>
+<main>
+<section id="page-events" class="page active">
+ <div class="hero">
+  <div class="hero-content">
+   <div class="eyebrow"><span class="eyebrow-line"></span> DER TREFFPUNKT FÜR HUGOSMP</div>
+   <h1>Mehr Spieler.<br><span>Größere Events.</span></h1>
+   <p>FFA, Baseraid oder Community-Event? Finde Mitspieler, plane deine nächste Aktion und bring den Server zusammen. Ohne Chat-Spam.</p>
+   <div class="hero-buttons"><button id="heroCreate" class="btn btn-dark btn-large"><span class="plus">＋</span> Eigenes Event erstellen <span class="button-end-icon">→</span></button><button class="btn btn-outlined btn-large" id="howItWorks">So funktioniert’s <span class="button-end-icon">→</span></button></div>
+   <div class="hero-note"><span class="hero-note-icon">✦</span> Von NoMercy. Für die HugoSMP-Community.</div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+   <div class="art-badge">NMRCY <span>/</span> EVENTS</div>
+   <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+   <div class="art-panel">
+    <div class="art-panel-top"><span class="small-red-square"></span><span>COMMUNITY EDITION</span><span class="art-cross">✧</span></div>
+    <div class="sword-emblem"><svg viewBox="0 0 160 160" width="136" height="136"><g transform="rotate(-45 80 80)"><path d="M74 16H86V100H74Z" fill="#171717"/><path d="M78 6H82L92 24H68Z" fill="#171717"/><path d="M61 96H99V107H61Z" fill="#d54847"/><path d="M75 107H85V139H75Z" fill="#171717"/><path d="M70 139H90V148H70Z" fill="#171717"/><path d="M79 22H82V94H79Z" fill="#ffffff" opacity=".28"/></g></svg></div>
+    <div class="art-panel-bottom"><div><b>MACH MEHR DRAUS.</b><span>FINDE DEINE CREW.</span></div><span class="art-panel-mark">✦</span></div>
+   </div>
+   <div class="art-floating art-float-one">⚔ <span>FFA</span></div>
+   <div class="art-floating art-float-two">✦ <span>COMMUNITY</span></div>
+  </div>
+ </div>
+ <div class="stats-row">
+  <div class="stat"><span class="stat-icon">◉</span><div><b id="statEvents">0</b><span>Aktive Events</span></div></div>
+  <div class="stat"><span class="stat-icon">♟</span><div><b id="statPlayers">0</b><span>Anmeldungen</span></div></div>
+  <div class="stat"><span class="stat-icon">◇</span><div><b>6</b><span>Event-Kategorien</span></div></div>
+  <div class="stats-message">Alle Live-Zahlen beziehen sich nur auf den Hub. <span>Keine Ingame-Erkennung.</span></div>
+ </div>
+
+ <section class="explore-section" id="explore" aria-labelledby="exploreTitle">
+  <div class="explore-top"><div><div class="eyebrow eyebrow-small">WAS GEHT HEUTE?</div><h2 id="exploreTitle">Für jede Runde <span>ein Platz.</span></h2><p>Von spontanen FFAs bis zum großen Baseraid – wähle aus, was du suchst.</p></div><span class="explore-hint">6 Kategorien · keine Demo-Events</span></div>
+  <div class="category-showcase" id="categoryShowcase">
+   <button type="button" class="category-tile cat-ffa" data-category="FFA"><span class="tile-icon">⚔️</span><span class="tile-text"><strong>FFA & PvP</strong><small>Spontan zusammen kämpfen</small></span><span class="tile-go">→</span></button>
+   <button type="button" class="category-tile cat-raid" data-category="Baseraid"><span class="tile-icon">💥</span><span class="tile-text"><strong>Baseraids</strong><small>Große Aktionen organisieren</small></span><span class="tile-go">→</span></button>
+   <button type="button" class="category-tile cat-cup" data-category="Turnier"><span class="tile-icon">🏆</span><span class="tile-text"><strong>Turniere</strong><small>1v1, 2v2 und mehr</small></span><span class="tile-go">→</span></button>
+   <button type="button" class="category-tile cat-loot" data-category="Lootdrop"><span class="tile-icon">🎁</span><span class="tile-text"><strong>Lootdrops</strong><small>Community-Giveaways</small></span><span class="tile-go">→</span></button>
+   <button type="button" class="category-tile cat-build" data-category="Bauevent"><span class="tile-icon">🧱</span><span class="tile-text"><strong>Bauevents</strong><small>Zusammen etwas erschaffen</small></span><span class="tile-go">→</span></button>
+   <button type="button" class="category-tile cat-community" data-category="Community"><span class="tile-icon">✨</span><span class="tile-text"><strong>Community</strong><small>Treffen und besondere Events</small></span><span class="tile-go">→</span></button>
+  </div>
+ </section>
+ <section class="content-section" id="discover">
+  <div class="section-header"><div><div class="eyebrow eyebrow-small">DISCOVER / EVENTS</div><h2>Finde deine <span>nächste Aktion.</span></h2><p>Entdecke Events der Community und melde dein Interesse an.</p></div><button id="createInline" class="btn btn-outlined">＋ Event eintragen</button></div>
+  <div class="filter-panel">
+   <div class="search-wrap"><svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="searchInput" type="search" placeholder="Suche FFA, Baseraids, Spieler ..." aria-label="Events durchsuchen"></div>
+   <div class="category-filters" id="categoryFilters" aria-label="Eventkategorien">
+    <button class="chip selected" data-type="">Alle Events</button><button class="chip" data-type="FFA">⚔️ FFA & PvP</button><button class="chip" data-type="Baseraid">💥 Baseraids</button><button class="chip" data-type="Turnier">🏆 Turniere</button><button class="chip" data-type="Lootdrop">🎁 Lootdrops</button><button class="chip" data-type="Bauevent">🧱 Bauevents</button><button class="chip" data-type="Community">✦ Community</button>
+   </div>
+   <div class="filter-bottom"><span id="resultsLabel" role="status">Events werden geladen ...</span><div class="filter-right"><button id="refreshEvents" class="refresh-button" type="button" aria-label="Eventliste aktualisieren" title="Events aktualisieren"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Aktualisieren</span></button><label for="dimensionFilter">Dimension</label><select id="dimensionFilter"><option value="">Alle Dimensionen</option><option>Overworld</option><option>Nether</option><option>End</option><option>Andere</option></select></div></div>
+  </div>
+  <div id="eventsGrid" class="events-grid" aria-live="polite" aria-busy="true"></div>
+ </section>
+ <section class="how-section" aria-labelledby="howHeading"><div class="how-intro"><div class="eyebrow eyebrow-small">EINFACH MITMACHEN</div><h2 id="howHeading">So läuft's <span>im Hub.</span></h2><p>Du brauchst keine Mod, um ein passendes Event zu finden.</p></div><div class="how-grid"><div class="how-card"><span class="how-number">01</span><div class="how-illustration how-one">⌕</div><strong>Event entdecken</strong><p>Filtere nach FFA, Baseraid oder einer anderen Kategorie.</p></div><div class="how-card"><span class="how-number">02</span><div class="how-illustration how-two">♡</div><strong>Interesse anmelden</strong><p>Zeig dem Host, dass du dabei sein möchtest.</p></div><div class="how-card"><span class="how-number">03</span><div class="how-illustration how-three">⌘</div><strong>TPA kopieren</strong><p>Nutze den Befehl im Spiel. Teleportziele sind nicht verifiziert.</p></div></div></section>
+ <section class="join-banner"><div><div class="eyebrow eyebrow-small eyebrow-inverse">BUILD SOMETHING BIGGER</div><h2>Dein Event. <span>Deine Community.</span></h2><p>Starte ein FFA, versammle dein Team für einen Baseraid oder plane ein Turnier.</p></div><button class="btn btn-white" id="bottomCreate">Event erstellen <span class="button-end-icon">→</span></button></section>
+</section>
+<section id="page-services" class="page subpage"><div class="subhead"><div class="eyebrow">MORE THAN EVENTS</div><h1>Zusammen <span>mehr erreichen.</span></h1><p>Der NoMercy Hub wächst. Diese Funktionen sind als nächste Ausbaustufen geplant.</p></div><div class="feature-grid"><article class="feature"><div class="feature-icon">⚒</div><span class="feature-state">IN PLANUNG</span><h3>Projekt-Services</h3><p>Finde Hilfe für Farmbau, große Bauprojekte und gemeinsame Aufgaben – kein Ersatz für <code>/order</code>.</p></article><article class="feature"><div class="feature-icon">♟</div><span class="feature-state">IN PLANUNG</span><h3>Clan HQ</h3><p>Ein privater Bereich für NMRCY, NMR2Y und NMR3Y: Aufgaben, Termine, Bewerbungen und Projekte.</p></article><article class="feature"><div class="feature-icon">🔔</div><span class="feature-state">IN PLANUNG</span><h3>Event-Benachrichtigungen</h3><p>Erhalte Hinweise zu neuen FFAs und Raids, die zu deinen Interessen passen.</p></article></div></section>
+<section id="page-safety" class="page subpage"><div class="subhead"><div class="eyebrow">COMMUNITY FIRST</div><h1>Fair organisiert. <span>Ohne falsche Versprechen.</span></h1><p>FFA und Baseraids sind PvP-Aktionen. Der Hub hilft bei Organisation und Meldungen – er kann Teleportziele nicht garantieren.</p></div><div class="safety-layout"><div class="safety-main"><article class="info-block"><span class="info-num">01</span><div><h3>PvP gehört dazu.</h3><p>Ein Tod im normalen Kampf oder der Verlust von Items bei einem Baseraid ist nicht automatisch ein Verstoß. Informiere dich über die Eventbedingungen.</p></div></article><article class="info-block"><span class="info-num">02</span><div><h3>TPA-Ziele sind nicht geprüft.</h3><p>Ein Event-Eintrag beweist nicht, dass sein Treffpunkt sicher ist. Sei besonders vorsichtig mit wertvoller Ausrüstung oder bei unbekannten Hosts.</p></div></article><article class="info-block"><span class="info-num">03</span><div><h3>Reports sind keine Urteile.</h3><p>Meldungen werden gespeichert und müssen geprüft werden. Niemand wird allein aufgrund der Anzahl von Reports automatisch gesperrt.</p></div></article><article class="info-block"><span class="info-num">04</span><div><h3>Keine Minecraft-Passwörter.</h3><p>Ein Hub-Konto ist getrennt vom Minecraft-Konto. Wir benötigen weder dein Minecraft-Passwort noch Zugang zu deinem Launcher.</p></div></article></div><aside class="safety-aside"><span class="shield-mark">♢</span><h3>Safety by design.</h3><p>Identitäten sind in Version 1 <strong>nicht mit Minecraft verifiziert</strong>. Eine mögliche spätere Verifizierung ist nur mit einem sicheren, erlaubten Verfahren sinnvoll.</p><div class="safety-small">Unoffizielles Community-Projekt. Nicht mit HugoSMP verbunden.</div></aside></div></section>
+<section id="page-mine" class="page subpage"><div class="subhead"><div class="eyebrow">DEINE AKTIONEN</div><h1>Meine <span>Events.</span></h1><p>Verwalte die Events, die du über deinen Hub-Account erstellt hast.</p></div><div id="mineContent" class="mine-content"></div></section>
+</main>
+<footer class="footer"><div class="footer-brand"><strong>NoMercy<span>.</span></strong><small>COMMUNITY HUB</small></div><div class="footer-links"><button data-page="events">Events</button><button data-page="services">Services</button><button data-page="safety">Sicherheit</button></div><p>Mit ♥ für die HugoSMP-Community. Unabhängiges Fanprojekt – nicht offiziell mit HugoSMP verbunden.</p></footer>
+</div>
+<div id="toast" role="status" aria-live="polite" class="toast"></div>
+<div class="modal-scrim" id="modalScrim" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-head"><div><div class="eyebrow eyebrow-small" id="modalEyebrow">NOMERCY HUB</div><h2 id="modalTitle">Event erstellen</h2></div><button id="closeModal" class="icon-button" aria-label="Dialog schließen">×</button></div><div id="modalBody"></div></div></div>
+<script src="/app.js" defer></script>
+</body></html>
