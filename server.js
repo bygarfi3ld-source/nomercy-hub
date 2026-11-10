@@ -11,12 +11,13 @@ const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
 const TEST_USER = process.env.TEST_ACCESS_USER || 'nomercy';
 const TEST_PASSWORD = process.env.TEST_ACCESS_PASSWORD || '';
-if (process.env.NODE_ENV === 'production' && TEST_PASSWORD.length < 16) {
- console.error('TEST_ACCESS_PASSWORD benötigt: mindestens 16 Zeichen für öffentlichen Testbetrieb.');
+const SITE_PREVIEW_LOCK = process.env.SITE_PREVIEW_LOCK === '1';
+if (SITE_PREVIEW_LOCK && process.env.NODE_ENV === 'production' && TEST_PASSWORD.length < 16) {
+ console.error('Für den privaten Vorschaumodus wird ein TEST_ACCESS_PASSWORD mit mindestens 16 Zeichen benötigt.');
  process.exit(1);
 }
 function protectedPreview(req, res) {
- if (!TEST_PASSWORD) return false; // Local development without a preview password.
+ if (!SITE_PREVIEW_LOCK) return false; // Public event browsing by default; actions require Hub login.
  const auth = req.headers.authorization || '';
  let provided = '';
  if (auth.startsWith('Basic ')) {

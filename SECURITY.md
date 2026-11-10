@@ -16,7 +16,7 @@ Bitte keine unveröffentlichten Schwachstellen, Zugangsdaten oder personenbezoge
 
 ## Betrieb
 
-- Testseite nur über HTTPS veröffentlichen und durch `TEST_ACCESS_PASSWORD` schützen.
+- Hub ausschließlich über HTTPS veröffentlichen. Öffentliche Events ohne Anmeldung, Aktionen nur mit Hub-Account; optional private Vorschau über `SITE_PREVIEW_LOCK=1` plus `TEST_ACCESS_PASSWORD` (16+ Zeichen).
 - Starke und getrennte Geheimnisse für Testzugang und `ADMIN_TOKEN` setzen.
 - `NODE_ENV=production` und `COOKIE_SECURE=1` konfigurieren.
 - `DATA_DIR` auf ein **dauerhaftes, eigenes Volume** setzen; niemals eine SQLite-Datenbank in Git hochladen.

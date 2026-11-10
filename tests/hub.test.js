@@ -26,7 +26,7 @@ test('privater Hub: Zugangsschutz, keine Demo-Events, Accounts und Events', {tim
   const auth='Basic '+Buffer.from('nomercy:only-for-the-automated-test').toString('base64');
   const server=spawn(process.execPath,['server.js'], {
     cwd:path.resolve(__dirname,'..'),
-    env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,TEST_ACCESS_USER:'nomercy',TEST_ACCESS_PASSWORD:'only-for-the-automated-test',NODE_ENV:'production'},
+    env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,TEST_ACCESS_USER:'nomercy',TEST_ACCESS_PASSWORD:'only-for-the-automated-test',SITE_PREVIEW_LOCK:'1',NODE_ENV:'production'},
     stdio:['ignore','pipe','pipe']
   });
   let log='';server.stderr.on('data',b=>{log+=b.toString()});
@@ -81,4 +81,49 @@ test('privater Hub: Zugangsschutz, keine Demo-Events, Accounts und Events', {tim
     await new Promise(resolve=>{if(server.exitCode!==null)resolve();else {server.once('exit',resolve);setTimeout(resolve,1000);}});
     rmSync(dir,{recursive:true,force:true});
   }
+});
+
+test('öffentlicher Hub: Lesen ohne Login, Schreiben nur mit Hub-Konto', {timeout:30000}, async () => {
+ const dir=mkdtempSync(path.join(tmpdir(),'nomercy-public-test-'));
+ const port=await freePort();
+ const url=`http://127.0.0.1:${port}`;
+ const server=spawn(process.execPath,['server.js'], {
+  cwd:path.resolve(__dirname,'..'),
+  env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,NODE_ENV:'production',
+   TEST_ACCESS_PASSWORD:'unused-but-still-set-preview-password',SITE_PREVIEW_LOCK:'0'},
+  stdio:['ignore','pipe','pipe']
+ });
+ let log='';server.stderr.on('data',b=>{log+=b.toString()});
+ const post=(route,body,cookie)=>fetch(url+route,{method:'POST',headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(body)});
+ try {
+  let ready=false;
+  for(let i=0;i<75;i++){
+   if(server.exitCode!==null)break;
+   try{const res=await fetch(url+'/healthz');if(res.ok){ready=true;break;}}catch{}
+   await delay(120);
+  }
+  assert.equal(ready,true,'Server startet nicht: '+log);
+  const homepage=await fetch(url+'/');
+  assert.equal(homepage.status,200,'Startseite muss ohne Anmeldung sichtbar sein');
+  assert.match(await homepage.text(),/NoMercy Hub/);
+  assert.equal((await fetch(url+'/api/events')).status,200,'Events müssen öffentlich lesbar sein');
+  assert.equal((await fetch(url+'/api/stats')).status,200,'Statistiken müssen öffentlich sein');
+  assert.deepEqual((await (await fetch(url+'/api/me')).json()).user,null);
+  const upcoming=new Date(Date.now()+3600000).toISOString();
+  const event={title:'Öffentliches Community-FFA',type:'FFA',dimension:'Overworld',mc_host:'ByGarfi3ld',note:'Das ist ein Event für den öffentlichen Test.',max_players:20,starts_at:upcoming,duration_minutes:90};
+  assert.equal((await post('/api/events',event)).status,401,'Event erstellen erfordert Login');
+  assert.equal((await post('/api/events/1/join',{})).status,404,'Unbekannte Event-ID gibt 404 zurück');
+  const register=await post('/api/register',{handle:'PublicTester',password:'strong-test-password-2026'});
+  assert.equal(register.status,201,'Konto muss angelegt werden können');
+  const cookie=register.headers.get('set-cookie').split(';')[0];
+  assert.equal((await post('/api/events',event,cookie)).status,201,'Account darf Event erstellen');
+  assert.equal((await fetch(url+'/api/events')).status,200,'Auch nach Erstellung öffentlich lesbar');
+  assert.equal((await post('/api/events/1/join',{})).status,401,'Teilnahme benötigt Konto');
+  assert.equal((await post('/api/events/1/report',{reason:'Irreführendes Event',details:'Hinreichend langer Hinweistext',confirm_truth:true})).status,401,'Meldung benötigt Konto');
+  assert.equal((await fetch(url+'/api/admin/reports')).status,403,'Moderation bleibt geschützt');
+ }finally{
+  server.kill('SIGTERM');
+  await new Promise(resolve=>{if(server.exitCode!==null)resolve();else{server.once('exit',resolve);setTimeout(resolve,1000);}});
+  rmSync(dir,{recursive:true,force:true});
+ }
 });

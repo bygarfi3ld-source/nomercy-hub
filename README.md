@@ -2,11 +2,15 @@
 
 **Open-Source-Event-Finder für die HugoSMP-Community – entwickelt von NoMercy (NMRCY).**
 
-> 🚧 **MVP / private Testversion.** Unabhängiges Fanprojekt, nicht offiziell von HugoSMP betrieben oder unterstützt. Kein Minecraft-Login erforderlich und niemals Minecraft-Passwörter eingeben.
+> 🚧 **Öffentlich lesbarer MVP / Testbetrieb.** Unabhängiges Fanprojekt, nicht offiziell von HugoSMP betrieben oder unterstützt. Kein Minecraft-Login erforderlich und niemals Minecraft-Passwörter eingeben.
 
 ## Warum gibt es den Hub?
 
 Auf HugoSMP werden FFAs und Baseraids häufig nur im Chat mit `/tpa` angekündigt. Solche Nachrichten verschwinden schnell. NoMercy Hub bietet einen gemeinsamen Ort, um Community-Events zu entdecken und zu organisieren.
+
+## Anmeldung
+
+**Lesen ohne Registrierung:** Events, Veranstalterprofile, Kategorien und TPA-Ziele sind öffentlich sichtbar. **Für Aktionen** (Event erstellen, teilnehmen, melden, eigenes Profil bearbeiten) braucht man ein kostenloses Hub-Konto mit Benutzername und einem separaten Passwort (mindestens 10 Zeichen). Keine Verbindung zum Minecraft-Login; Minecraft-Namen sind nicht verifiziert. Niemals das Microsoft- oder Minecraft-Passwort eingeben.
 
 ## Funktionen
 
@@ -32,16 +36,17 @@ Im Browser öffnen: **http://localhost:3030**.
 
 Unter Windows geht alternativ `start-windows.bat`. Beim ersten Start erzeugt die Anwendung ihre **eigene** SQLite-Datenbank unter `data/hub.sqlite`. Es werden **keine** externen Datenbanken oder Supabase-Dienste benutzt.
 
-### Lokal mit Zugriffsschutz testen
+### Optional: private Vorschau mit zusätzlichem Passwort
 
 ```bash
 # PowerShell (Beispielwerte selbst ersetzen)
+$env:SITE_PREVIEW_LOCK = '1'
 $env:TEST_ACCESS_USER = 'nomercy'
 $env:TEST_ACCESS_PASSWORD = 'EIN_EIGENES_LANGES_TESTPASSWORT'
 npm start
 ```
 
-Zum Schutz einer online gehosteten Instanz müssen `NODE_ENV=production`, `TEST_ACCESS_PASSWORD` (mindestens 16 Zeichen), `HOST=0.0.0.0` und ein eigener dauerhafter `DATA_DIR` gesetzt sein. **Keine echten Secrets in GitHub oder Screenshots speichern.**
+Für öffentlichen Testbetrieb: `NODE_ENV=production`, `HOST=0.0.0.0`, `COOKIE_SECURE=1` und ein eigener dauerhafter `DATA_DIR`. `SITE_PREVIEW_LOCK` standardmäßig nicht setzen bzw. `0` – alle Besucher dürfen lesen. Nur mit `SITE_PREVIEW_LOCK=1` ist zusätzlich `TEST_ACCESS_PASSWORD` (mindestens 16 Zeichen) Pflicht. **Keine echten Secrets in GitHub oder Screenshots speichern.**
 
 ### Tests
 
@@ -71,7 +76,7 @@ SECURITY.md             Sicherheitshinweise
 Das Repository kann als **eigenständiger Node.js-Service** auf Railway veröffentlicht werden, sobald ein eigenes GitHub-Repository angelegt ist.
 
 - **Neues Railway-Projekt oder eigener Service**; nicht in fremde Apps deployen.
-- `NODE_ENV=production`, `TEST_ACCESS_USER`, `TEST_ACCESS_PASSWORD`, `COOKIE_SECURE=1` setzen.
+- `NODE_ENV=production`, `HOST=0.0.0.0`, `COOKIE_SECURE=1`, `DATA_DIR=/data` setzen. Für öffentlich lesbare Events `SITE_PREVIEW_LOCK=0`; für private Tests `SITE_PREVIEW_LOCK=1` und `TEST_ACCESS_PASSWORD` (mindestens 16 Zeichen).
 - **Eigene Railway Volume** an `/data` mounten und `DATA_DIR=/data` setzen.
 - Startbefehl: `npm start`. Der HTTP-Port kommt automatisch von Railway über `PORT`.
 - Für Healthchecks steht `/healthz` zur Verfügung (liefert keine privaten Daten).
