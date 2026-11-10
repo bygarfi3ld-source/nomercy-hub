@@ -17,7 +17,10 @@ Bitte keine unveröffentlichten Schwachstellen, Zugangsdaten oder personenbezoge
 ## Betrieb
 
 - Hub ausschließlich über HTTPS veröffentlichen. Öffentliche Events ohne Anmeldung, Aktionen nur mit Hub-Account; optional private Vorschau über `SITE_PREVIEW_LOCK=1` plus `TEST_ACCESS_PASSWORD` (16+ Zeichen).
-- Starke und getrennte Geheimnisse für Testzugang und `ADMIN_TOKEN` setzen.
+- Starke und getrennte Geheimnisse für Testzugang und `ADMIN_BOOTSTRAP_TOKEN` (einmalig, min. 32 Zeichen) setzen.
 - `NODE_ENV=production` und `COOKIE_SECURE=1` konfigurieren.
 - `DATA_DIR` auf ein **dauerhaftes, eigenes Volume** setzen; niemals eine SQLite-Datenbank in Git hochladen.
 - Updates und regelmäßige Backups einplanen; nur vertrauenswürdige Maintainer bekommen Hosting-Zugriff.
+
+- Den einmaligen Admin-Code nach erfolgreicher Freischaltung aus den Hosting-Variablen löschen. Rollen werden ausschließlich serverseitig anhand der Hub-Sitzung und Datenbank geprüft.
+- Bei Moderationsentscheidungen werden Begründung, Bearbeiter und Zeitpunkt in einem Audit-Verlauf gespeichert.

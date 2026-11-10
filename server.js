@@ -74,11 +74,33 @@ CREATE INDEX IF NOT EXISTS idx_events_dates ON events(ends_at, starts_at);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);`);
 
 // Add optional public profile columns without resetting existing user databases.
-for (const [name, definition] of [['mc_name',"TEXT NOT NULL DEFAULT ''"], ['bio',"TEXT NOT NULL DEFAULT ''"]]) {
+for (const [name, definition] of [['mc_name',"TEXT NOT NULL DEFAULT ''"], ['bio',"TEXT NOT NULL DEFAULT ''"], ['role',"TEXT NOT NULL DEFAULT 'member'"]]) {
  if (!db.prepare('PRAGMA table_info(users)').all().some(column => column.name === name)) {
   db.exec(`ALTER TABLE users ADD COLUMN ${name} ${definition}`);
  }
 }
+// Online migrations: existing report records and Hub accounts stay intact.
+for (const [name, definition] of [
+ ['reviewed_by', 'INTEGER REFERENCES users(id) ON DELETE SET NULL'],
+ ['reviewed_at', 'TEXT'],
+ ['moderator_note', "TEXT NOT NULL DEFAULT ''"]
+]) {
+ if (!db.prepare('PRAGMA table_info(reports)').all().some(column => column.name === name)) {
+  db.exec(`ALTER TABLE reports ADD COLUMN ${name} ${definition}`);
+ }
+}
+db.exec(`CREATE TABLE IF NOT EXISTS moderation_log (
+ id INTEGER PRIMARY KEY,
+ moderator_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+ event_id INTEGER,
+ report_id INTEGER,
+ action TEXT NOT NULL,
+ previous_value TEXT,
+ new_value TEXT,
+ note TEXT NOT NULL DEFAULT '',
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_moderation_log_date ON moderation_log(created_at);`);
 const now = () => new Date().toISOString();
 const errors = (status, message) => Object.assign(new Error(message), { status });
 const eventTypes = ['FFA', 'Baseraid', 'Turnier', 'Lootdrop', 'Bauevent', 'Community'];
@@ -100,9 +122,25 @@ function cookieGet(req, name) {
 function currentUser(req) {
  const sid = cookieGet(req,'sid'); if(!/^[a-f0-9]{64}$/.test(sid))return null;
  const hash = crypto.createHash('sha256').update(sid).digest('hex');
- return db.prepare(`SELECT users.id,users.handle FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.expires_at>?`).get(hash,Date.now()) || null;
+ return db.prepare(`SELECT users.id,users.handle,users.role FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.expires_at>?`).get(hash,Date.now()) || null;
 }
 function requireUser(req) { const u=currentUser(req); if(!u)throw errors(401,'Bitte zuerst ein Hub-Konto erstellen oder anmelden.'); return u; }
+function requireStaff(req, adminOnly=false) {
+ const u=currentUser(req);
+ if(!u || (adminOnly?u.role!=='admin':!['admin','moderator'].includes(u.role))) {
+  throw errors(403,'Keine Moderationsberechtigung.');
+ }
+ return u;
+}
+function atomic(fn) {
+ db.exec('BEGIN IMMEDIATE');
+ try { const value=fn(); db.exec('COMMIT'); return value; }
+ catch(e) { db.exec('ROLLBACK'); throw e; }
+}
+function audit(staff, action, eventId, reportId, before, after, note='') {
+ db.prepare('INSERT INTO moderation_log(moderator_id,event_id,report_id,action,previous_value,new_value,note,created_at) VALUES(?,?,?,?,?,?,?,?)')
+  .run(staff.id,eventId??null,reportId??null,action,before??null,after??null,note,now());
+}
 function json(res,status,data, extra={}) {res.writeHead(status, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff',...extra});res.end(JSON.stringify(data));}
 function setSession(res,u) {
  const token=crypto.randomBytes(32).toString('hex');
@@ -152,7 +190,7 @@ async function api(req,res,url) {
   if(!/^[A-Za-z0-9_]{3,20}$/.test(handle))throw errors(400,'Hub-Name: 3–20 Zeichen, nur Buchstaben, Zahlen und _.');
   if(pass.length<10||pass.length>128)throw errors(400,'Passwort muss zwischen 10 und 128 Zeichen haben.');
   const salt=crypto.randomBytes(16).toString('hex');let u;
-  try{const r=db.prepare('INSERT INTO users(handle,password_hash,salt,created_at) VALUES(?,?,?,?)').run(handle,passwordHash(pass,salt),salt,now());u={id:Number(r.lastInsertRowid),handle};}
+  try{const r=db.prepare('INSERT INTO users(handle,password_hash,salt,created_at) VALUES(?,?,?,?)').run(handle,passwordHash(pass,salt),salt,now());u={id:Number(r.lastInsertRowid),handle,role:'member'};}
   catch(e){if(e.message.includes('UNIQUE'))throw errors(409,'Dieser Hub-Name ist bereits vergeben.'); throw e;}
   return json(res,201,{user:u,notice:'Hub-Account erstellt. Minecraft-Identität ist NICHT verifiziert.'},{'Set-Cookie':setSession(res,u)});
  }
@@ -160,7 +198,7 @@ async function api(req,res,url) {
   checkRate(req,'login',12,600000);const b=await readBody(req);const handle=bounded(b.handle,20),pass=typeof b.password==='string'?b.password:'';
   const u=db.prepare('SELECT * FROM users WHERE handle=?').get(handle);
   if(!u || !pass || !crypto.timingSafeEqual(Buffer.from(passwordHash(pass,u.salt),'hex'),Buffer.from(u.password_hash,'hex')))throw errors(401,'Ungültiger Hub-Name oder Passwort.');
-  const user={id:u.id,handle:u.handle};return json(res,200,{user},{'Set-Cookie':setSession(res,user)});
+  const user={id:u.id,handle:u.handle,role:u.role};return json(res,200,{user},{'Set-Cookie':setSession(res,user)});
  }
  if(p==='/api/logout'&&method==='POST') {
   const sid=cookieGet(req,'sid');if(sid)db.prepare('DELETE FROM sessions WHERE token_hash=?').run(crypto.createHash('sha256').update(sid).digest('hex'));
@@ -197,7 +235,10 @@ async function api(req,res,url) {
  if(m){
   const id=Number(m[1]),act=m[2]||'';const e=db.prepare('SELECT * FROM events WHERE id=?').get(id);
   if(!e)throw errors(404,'Event nicht gefunden');
-  if(method==='GET'&&!act){const full=db.prepare(eventSelect+' WHERE e.id=?').get(id);return json(res,200,{event:asEvent(full,viewer?.id)});}
+  if(method==='GET'&&!act){
+   if(e.status==='hidden' && e.creator_id!==viewer?.id && !['admin','moderator'].includes(viewer?.role))throw errors(404,'Event nicht gefunden');
+   const full=db.prepare(eventSelect+' WHERE e.id=?').get(id);return json(res,200,{event:asEvent(full,viewer?.id)});
+  }
   if(method==='POST'&&act==='join'){
     const u=requireUser(req);checkRate(req,'join',25);if(e.status!=='open'||(e.ends_at<=now()&&!e.is_demo))throw errors(409,'Dieses Event ist beendet.');
     if(e.is_demo)throw errors(409,'Beispiel-Events können nicht gebucht werden.');
@@ -223,24 +264,116 @@ async function api(req,res,url) {
     return json(res,201,{ok:true,notice:'Meldung wurde gespeichert und muss manuell geprüft werden. Kein automatischer Bann.'});
   }
  }
- // Moderation API only with explicitly configured secret; no public endpoint to list evidence.
+ // Moderation access is bound to Hub sessions and database roles, never to a public username alone.
+ // One-time owner claim needs a separate 32+ character token set only in the hosting environment.
+ if(p==='/api/admin/setup' && method==='GET') {
+  const u=requireUser(req);
+  const available=!!process.env.ADMIN_BOOTSTRAP_TOKEN && process.env.ADMIN_BOOTSTRAP_TOKEN.length>=32 &&
+   db.prepare("SELECT COUNT(*) AS n FROM users WHERE role='admin'").get().n===0;
+  return json(res,200,{role:u.role,setup_available:available});
+ }
+ if(p==='/api/admin/claim' && method==='POST') {
+  const u=requireUser(req); checkRate(req,'admin-claim',5,3600000);
+  const body=await readBody(req);
+  const token=process.env.ADMIN_BOOTSTRAP_TOKEN || '';
+  const provided=typeof body.token==='string'?body.token:'';
+  if(token.length<32 || provided.length>256 || !provided ||
+   !crypto.timingSafeEqual(crypto.createHash('sha256').update(token).digest(),crypto.createHash('sha256').update(provided).digest())) {
+    throw errors(403,'Ungültiger Freischaltcode.');
+  }
+  const claimed=atomic(()=>{
+   if(db.prepare("SELECT 1 FROM users WHERE role='admin' LIMIT 1").get())throw errors(409,'Die erste Admin-Freischaltung ist bereits erfolgt.');
+   db.prepare("UPDATE users SET role='admin' WHERE id=? AND role='member'").run(u.id);
+   audit(u,'owner_claim',null,null,null,'admin','Erstmalige Admin-Freischaltung');
+   return true;
+  });
+  return json(res,200,{ok:claimed,role:'admin'});
+ }
+ if(p==='/api/admin/overview' && method==='GET') {
+  requireStaff(req);
+  const counts=db.prepare("SELECT status, COUNT(*) AS n FROM reports GROUP BY status").all();
+  const total=Object.fromEntries(['open','reviewed','dismissed'].map(k=>[k,counts.find(x=>x.status===k)?.n||0]));
+  const hidden=db.prepare("SELECT COUNT(*) AS n FROM events WHERE status='hidden'").get().n;
+  return json(res,200,{counts:total,hidden});
+ }
  if(p==='/api/admin/reports' && method==='GET') {
-  const token=process.env.ADMIN_TOKEN;if(!token||token.length<24||req.headers['x-admin-token']!==token)throw errors(403,'Nicht verfügbar');
-  return json(res,200,{reports:db.prepare('SELECT r.*, e.title AS event_title, u.handle AS reporter FROM reports r JOIN events e ON e.id=r.event_id JOIN users u ON u.id=r.reporter_id ORDER BY r.created_at DESC LIMIT 200').all()});
+  requireStaff(req);
+  const status=url.searchParams.get('status')||'all';
+  if(!['open','reviewed','dismissed','all'].includes(status))throw errors(400,'Ungültiger Filter');
+  const rows=db.prepare(`SELECT r.*, e.title AS event_title, e.status AS event_status, e.mc_host,
+    organizer.handle AS organizer_handle, reporter.handle AS reporter,
+    reviewer.handle AS reviewed_by_handle
+    FROM reports r JOIN events e ON e.id=r.event_id
+    JOIN users reporter ON reporter.id=r.reporter_id
+    LEFT JOIN users organizer ON organizer.id=e.creator_id
+    LEFT JOIN users reviewer ON reviewer.id=r.reviewed_by
+    WHERE (?='all' OR r.status=?)
+    ORDER BY CASE r.status WHEN 'open' THEN 0 ELSE 1 END, r.created_at DESC LIMIT 200`).all(status,status);
+  return json(res,200,{reports:rows});
  }
- if(p==='/api/admin/events/status'&&method==='POST'){
-  const token=process.env.ADMIN_TOKEN;if(!token||token.length<24||req.headers['x-admin-token']!==token)throw errors(403,'Nicht verfügbar');
-  const b=await readBody(req);const id=Number(b.id);
-  if(!Number.isInteger(id)||!['open','hidden','closed'].includes(b.status))throw errors(400,'Ungültige Event-Statusänderung');
-  const evt=db.prepare('SELECT * FROM events WHERE id=?').get(id);
-  if(!evt||evt.is_demo)throw errors(404,'Event nicht gefunden oder nur Demo');
-  const r=db.prepare('UPDATE events SET status=? WHERE id=?').run(b.status,id);
-  return json(res,200,{ok:r.changes>0});
+ if(p==='/api/admin/reports/review' && method==='POST') {
+  const staff=requireStaff(req);checkRate(req,'moderation',60,60000);
+  const b=await readBody(req);
+  const id=Number(b.id), status=b.status, note=bounded(b.note,500);
+  if(!Number.isSafeInteger(id)||id<1||!['open','dismissed','reviewed'].includes(status)||note.length<8)throw errors(400,'Meldungsstatus und Begründung (mindestens 8 Zeichen) erforderlich.');
+  const result=atomic(()=>{
+   const r=db.prepare('SELECT * FROM reports WHERE id=?').get(id);
+   if(!r)throw errors(404,'Meldung nicht gefunden');
+   db.prepare('UPDATE reports SET status=?,moderator_note=?,reviewed_by=?,reviewed_at=? WHERE id=?')
+    .run(status,note,staff.id,now(),id);
+   audit(staff,'report_review',r.event_id,id,r.status,status,note);
+   return {ok:true};
+  });
+  return json(res,200,result);
  }
- if(p==='/api/admin/reports/review'&&method==='POST'){
-  const token=process.env.ADMIN_TOKEN;if(!token||token.length<24||req.headers['x-admin-token']!==token)throw errors(403,'Nicht verfügbar');
-  const b=await readBody(req);if(!['dismissed','reviewed','open'].includes(b.status)||!Number.isInteger(Number(b.id)))throw errors(400,'Ungültige Statusänderung');
-  const r=db.prepare('UPDATE reports SET status=? WHERE id=?').run(b.status,Number(b.id));return json(res,200,{ok:r.changes>0});
+ if(p==='/api/admin/events/status' && method==='POST') {
+  const staff=requireStaff(req);checkRate(req,'moderation',60,60000);
+  const b=await readBody(req);
+  const id=Number(b.id), status=b.status, note=bounded(b.note,500);
+  if(!Number.isSafeInteger(id)||id<1||!['open','hidden','closed'].includes(status)||note.length<8)throw errors(400,'Eventstatus und Begründung (mindestens 8 Zeichen) erforderlich.');
+  const result=atomic(()=>{
+   const event=db.prepare('SELECT * FROM events WHERE id=?').get(id);
+   if(!event||event.is_demo)throw errors(404,'Event nicht gefunden');
+   if(status==='open' && event.ends_at<=now())throw errors(409,'Vergangene Events können nicht erneut geöffnet werden.');
+   if(event.status===status)throw errors(409,'Event hat bereits diesen Status.');
+   db.prepare('UPDATE events SET status=? WHERE id=?').run(status,id);
+   audit(staff,'event_status',id,null,event.status,status,note);
+   return {ok:true};
+  });
+  return json(res,200,result);
+ }
+ if(p==='/api/admin/events' && method==='GET') {
+  requireStaff(req);
+  return json(res,200,{events:db.prepare(`SELECT e.id,e.title,e.type,e.mc_host,e.status,e.starts_at,e.ends_at,
+    e.created_at,u.handle AS organizer_handle,
+    (SELECT COUNT(*) FROM reports r WHERE r.event_id=e.id) AS report_count
+    FROM events e LEFT JOIN users u ON u.id=e.creator_id
+    WHERE e.is_demo=0 ORDER BY e.created_at DESC LIMIT 100`).all()});
+ }
+ if(p==='/api/admin/history' && method==='GET') {
+  requireStaff(req);
+  return json(res,200,{history:db.prepare(`SELECT m.id,m.event_id,m.report_id,m.action,m.previous_value,m.new_value,m.note,m.created_at,
+    u.handle AS moderator_handle FROM moderation_log m LEFT JOIN users u ON u.id=m.moderator_id
+    ORDER BY m.id DESC LIMIT 100`).all()});
+ }
+ if(p==='/api/admin/team' && method==='GET') {
+  requireStaff(req,true);
+  return json(res,200,{team:db.prepare("SELECT id,handle,role FROM users WHERE role IN ('admin','moderator') ORDER BY role,handle").all()});
+ }
+ if(p==='/api/admin/team' && method==='POST') {
+  const staff=requireStaff(req,true);checkRate(req,'moderation-team',15,3600000);
+  const b=await readBody(req),handle=bounded(b.handle,20),role=b.role;
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(handle)||!['moderator','member'].includes(role))throw errors(400,'Hub-Name und Rolle moderator/member erforderlich.');
+  const result=atomic(()=>{
+   const target=db.prepare('SELECT id,role FROM users WHERE handle=?').get(handle);
+   if(!target)throw errors(404,'Hub-Konto nicht gefunden');
+   if(target.role==='admin')throw errors(403,'Administratoren lassen sich über diese Oberfläche nicht verändern.');
+   if(target.role===role)throw errors(409,'Die Rolle ist schon vergeben.');
+   db.prepare('UPDATE users SET role=? WHERE id=?').run(role,target.id);
+   audit(staff,'team_role',null,null,target.role,role,'Hub-Konto '+handle);
+   return {ok:true};
+  });
+  return json(res,200,result);
  }
  throw errors(404,'API nicht gefunden');
 }

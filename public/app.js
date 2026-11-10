@@ -34,6 +34,7 @@ async function fetchAll({skeleton=false}={}){
   const [me,events,stats]=await Promise.all([api('/api/me'),api('/api/events'),api('/api/stats')]);
   state.user=me.user;state.events=events.events;state.stats=stats;
   $('#accountButton').textContent=state.user?state.user.handle:'Anmelden';
+  $('#modLink').style.display=['admin','moderator'].includes(state.user?.role)?'inline-flex':'none';
   $('#statEvents').textContent=stats.events;$('#statPlayers').textContent=stats.participants;
   $('#eventsGrid').setAttribute('aria-busy','false');renderEvents();if(state.page==='mine')renderMine();
  }catch(e){toast(e.message);$('#eventsGrid').setAttribute('aria-busy','false');$('#eventsGrid').innerHTML='<div class="empty-state"><h3>Verbindung fehlgeschlagen</h3><p>Starte zuerst den NoMercy-Hub-Server und lade die Seite neu.</p><button class="btn btn-dark" data-action="reload">Erneut versuchen</button></div>';}finally{$('#refreshEvents')?.classList.remove('is-refreshing');}

@@ -19,6 +19,7 @@ Auf HugoSMP werden FFAs und Baseraids häufig nur im Chat mit `/tpa` angekündig
 - 👥 **Interessensbekundungen** – anmelden oder abmelden; die Zahl bedeutet **nicht**, dass Spieler ingame anwesend sind.
 - 📋 **TPA-Befehl kopieren** – keine automatische Teleportation.
 - 🛡️ **Meldeprozess** – Fake-Events und verdächtige TPA-/Bett-Traps mit Details melden; Moderation entscheidet manuell.
+- 🧰 **Moderationsdashboard** – Meldungen prüfen, begründete Entscheidungen, Events aus- und wieder einblenden, Audit-Verlauf, Moderatoren verwalten.
 - 🧑 **Hub-Profile** – freiwillige Angaben und optionaler Skinabruf, **keine** Verifizierung der Minecraft-Identität.
 - 🎨 **Mobile Oberfläche** – Kategorie-Kacheln, Lade-Skeletons, dezente Animationen, Live-Eventvorschau.
 - 🌱 **Keine künstlichen aktiven Events** – die Datenbank beginnt leer.
@@ -92,3 +93,14 @@ Minecraft-Identitäten und Teleportziele sind nicht geprüft. Events können PvP
 Dieses Projekt steht unter der **[MIT-Lizenz](LICENSE)**. Beiträge sind willkommen: siehe [CONTRIBUTING.md](CONTRIBUTING.md). Vertrauliche Sicherheitsprobleme bitte gemäß [SECURITY.md](SECURITY.md) melden.
 
 **NoMercy Hub** ist ein inoffizielles Community-Projekt. Minecraft und HugoSMP gehören den jeweiligen Rechteinhabern.
+
+## Moderation sicher einrichten
+
+1. Im eigenen Hosting (z. B. Railway → `nomercy-hub-v03` → Variables) einen zufälligen geheimen **`ADMIN_BOOTSTRAP_TOKEN` mit mindestens 32 Zeichen** setzen. Nicht committen, nicht im Browser oder Chat öffentlich teilen.
+2. Ein eigenes Hub-Konto registrieren bzw. anmelden. `/moderation.html` öffnen und den Code **einmalig** eingeben. Danach wird genau dieses bestehende Hub-Konto als Admin freigeschaltet.
+3. Nach erfolgreicher Einrichtung **`ADMIN_BOOTSTRAP_TOKEN` aus den Railway-Variablen löschen**. Der Admin bleibt in SQLite bestehen; der Code wird nicht mehr benötigt.
+4. Als Admin lassen sich unter **Team** bestehende Hub-Accounts zu Moderatoren ernennen oder die Rechte entziehen.
+
+Die Moderation nutzt danach normale Hub-Sitzungen, keine Admin-Token im Browser. Normale Besucher können keine Reports abrufen; sie werden individuell manuell bewertet. Jedes Ausblenden, Wiederherstellen und jeder Reportabschluss braucht eine begründete Entscheidung im Audit-Verlauf. Niemand wird automatisch gebannt.
+
+**Achtung:** Ohne sichere Minecraft-Verifizierung können Hub-Namen nichts über die echte Minecraft-Identität aussagen. Der erste Admin wird deshalb *nicht* über einen frei registrierbaren Benutzernamen bestimmt.
