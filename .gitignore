@@ -1,0 +1,31 @@
+# Secrets and environment configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Runtime databases and SQLite temporary files
+data/*
+!data/.gitkeep
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm
+
+# Developer environments / build outputs
+node_modules/
+coverage/
+dist/
+build/
+.cache/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Railway CLI local context
+.railway/
