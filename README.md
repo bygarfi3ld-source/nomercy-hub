@@ -1,106 +1,118 @@
-# ⚔️ NoMercy Hub
+# ⚔️ NoMercy Hub – Clan HQ (V1.0.0)
 
-**Open-Source-Event-Finder für die HugoSMP-Community – entwickelt von NoMercy (NMRCY).**
+**Inoffizielles, eigenständiges Open-Source-Projekt für NoMercy und die HugoSMP-Community.** Nicht von HugoSMP, Mojang oder Microsoft betrieben. Kein Plugin und keine Verbindung zu einem Minecraft- oder Microsoft-Konto erforderlich.
 
-> 🚧 **Öffentlich lesbarer MVP / Testbetrieb.** Unabhängiges Fanprojekt, nicht offiziell von HugoSMP betrieben oder unterstützt. Kein Minecraft-Login erforderlich und niemals Minecraft-Passwörter eingeben.
+## V1.0 – Clan Hub, Bewerbungen und Giveaway-Feuerwerk
 
-## Warum gibt es den Hub?
+- **Marktplatz** ist ohne Anmeldung lesbar; Inserate, Kontaktdetails und Markt-Meldungen funktionieren mit Hub-Konto.
+- **Öffentliche Giveaways** sind für alle sichtbar, die Teilnahme erfordert ein Hub-Konto. **Private Giveaways und Clan-Events** benötigen eine persönliche Freischaltung der Clanleitung. Nicht freigeschaltete Spieler können eine **Beitrittsanfrage** mit Wunschclan, unverifiziertem Minecraft-Namen und Begründung stellen. Nur der Admin (nicht Moderatoren) kann freigeben. Admin-Entscheidungen werden protokolliert.
+- **Clanbank** mit gemeinsamer, manuell verwalteter Ingame-Kasse, nachvollziehbarem Ledger und Verwendungsanträgen. Genehmigung und tatsächlich bestätigte Auszahlung sind getrennt; keine echten Zahlungen.
+- **Gewinner-Reveal mit Sound**: ruhiger Namenslauf, progressives Enthüllen und ein selbst synthetisierter, kurzer Pixel-Feuerwerksklang. Start erst nach Benutzertipp, Ein-/Aus-Schalter vorhanden; keinerlei originale Minecraft-Audiodatei. Auf Wunsch reduzierte Bewegung und Überspringen.
+- **Design**: eigenes NM-Wappen, kleine selbst gezeichnete Pixel-Items auf jeder Hauptseite, weiche Karten und echte Skeleton-Ladezustände; mobil optimiert.
+- **Sicherheit**: Server zieht Gewinner mit CSPRNG einmalig und speichert sie persistent. Der Name-Reel samt Audio visualisiert nur das gespeicherte Ergebnis, nie die Auswahl. Keine Verifizierung der Minecraft-Identität oder Zugriff auf HugoSMP-Plugins.
 
-Auf HugoSMP werden FFAs und Baseraids häufig nur im Chat mit `/tpa` angekündigt. Solche Nachrichten verschwinden schnell. NoMercy Hub bietet einen gemeinsamen Ort, um Community-Events zu entdecken und zu organisieren.
+**Wichtig für neue Installationen:** Solange kein Administrator über `ADMIN_BOOTSTRAP_TOKEN` auf `/moderation.html` freigeschaltet ist, kann niemand Clan-Beitrittsanfragen genehmigen, Giveaways anlegen oder Buchungen vornehmen. Niemals einen Admin anhand eines allein behaupteten Spielernamens zuweisen. Alle neuen Daten bleiben im eigenen SQLite-Volume (`DATA_DIR`). Vor Produktion bestehendes Volume sichern.
 
-## Anmeldung
+## Frühere Updates
 
-**Lesen ohne Registrierung:** Events, Veranstalterprofile, Kategorien und TPA-Ziele sind öffentlich sichtbar. **Für Aktionen** (Event erstellen, teilnehmen, melden, eigenes Profil bearbeiten) braucht man ein kostenloses Hub-Konto mit Benutzername und einem separaten Passwort (mindestens 10 Zeichen). Keine Verbindung zum Minecraft-Login; Minecraft-Namen sind nicht verifiziert. Niemals das Microsoft- oder Minecraft-Passwort eingeben.
+### V0.8 – Giveaway-Sichtbarkeit
 
-## Funktionen
+- Die Clanleitung/Moderation wählt **bei jedem Giveaway**: `🌍 Öffentlich` (öffentlich sichtbar, Teilnahme mit Hub-Konto) oder `🔒 Privat` (nur freigeschaltete NoMercy-Mitglieder). Standard ist privat.
+- Alte Giveaways bleiben durch sichere SQLite-Migration **privat**, auch nach dem Upgrade; historische Accounts und Events bleiben erhalten.
+- Öffentliche Giveaways sind für jeden sichtbar; der Giveaway-Eintritt selbst benötigt einen Hub-Account. Private Giveaways werden auch über direkte API-URLs nicht für Nichtmitglieder angezeigt.
+- Die Zufallsziehung verwendet serverseitiges `crypto.randomInt`, berücksichtigt die zur Ziehung berechtigten Teilnehmer und speichert alle Gewinner unveränderlich ab. Öffentliche Teilnehmer müssen kein Clanmitglied sein. Kein Echtgeld und keine automatische Auszahlung.
+- Der **Marktplatz** bleibt für alle öffentlich sichtbar; **Clan-Events** benötigen Login plus Admin-Freischaltung (Main, Clan 2, Clan 3).
+- `preview/NoMercy-Hub-v0.8-Handy-Demo.html` ist eine eigenständige Demo mit umschaltbaren Rollen (Gast / Hub-Konto / Clan / Admin) und klar markierten Beispieldaten, ohne Änderungen an der Live-Website.
 
-- ⚔️ **Event-Finder** – FFA, Baseraid, Turnier, Lootdrop, Bauevent und Community.
-- 📅 **Event erstellen** – Titel, Beschreibung, Dimension, Zeitpunkt, Spielerlimit und TPA-Ziel.
-- 👥 **Interessensbekundungen** – anmelden oder abmelden; die Zahl bedeutet **nicht**, dass Spieler ingame anwesend sind.
-- 📋 **TPA-Befehl kopieren** – keine automatische Teleportation.
-- 🛡️ **Meldeprozess** – Fake-Events und verdächtige TPA-/Bett-Traps mit Details melden; Moderation entscheidet manuell.
-- 🧰 **Moderationsdashboard** – Meldungen prüfen, begründete Entscheidungen, Events aus- und wieder einblenden, Audit-Verlauf, Moderatoren verwalten.
-- 🧑 **Hub-Profile** – freiwillige Angaben und optionaler Skinabruf, **keine** Verifizierung der Minecraft-Identität.
-- 🎨 **Mobile Oberfläche** – Kategorie-Kacheln, Lade-Skeletons, dezente Animationen, Live-Eventvorschau.
-- 🌱 **Keine künstlichen aktiven Events** – die Datenbank beginnt leer.
+## Visuelles Update V0.7
 
-## Schnellstart am PC
+- Neu gestaltete **mobile-first** Oberfläche mit abgerundeten Panels und Karten, zurückhaltendem NoMercy-Schwarz/Rot, deutlicheren Abständen und lesbarer Schrift-Hierarchie.
+- Unterscheidbare Unterbereiche: Marktplatz (klar/leicht), Giveaways (editoriale Serif-Akzente) und Clan-Events (runde moderne Headline).
+- **Echte Loading-Skeletons** bei Markt- und internen Datenabrufen statt kurzfristig leerer Karten; bei API-Fehlern gibt es eine Fehlermeldung und die bestehende Seite bleibt benutzbar.
+- Sanfte Karten-/Tabwechsel-, Button- und Gewinner-Reveal-Animationen mit `prefers-reduced-motion` für barrierearme Nutzung.
+- Eine **eigenständige, rein lokale Design-Demo** mit deutlich als Beispiel markierten Daten liegt separat unter `NoMercy-Hub-v0.7-Handy-Vorschau.html`; diese Demo schreibt keine Daten und kontaktiert die echte Hub-API nicht.
+- V0.7 ließ Login und Ziehungsalgorithmus unverändert; V0.8 erweitert den Zugriff differenziert um öffentliche Giveaways, ohne bestehende Daten zu entfernen.
 
-**Voraussetzung:** Node.js **22.13.0 oder neuer** (mit `node:sqlite`).
+## Neues Clan HQ
+
+Der Hub hat jetzt drei Schwerpunkte:
+
+- **🎁 Öffentliche oder interne Giveaways**: öffentliche Drops für alle mit Hub-Konto, private Drops nur für von der Leitung freigeschaltete Mitglieder (Main, Clan 2, Clan 3). Nur die Hub-Moderation/Leitung kann Giveaways erstellen. Es gibt ein Enddatum mit Uhrzeit, Geld- oder Item-Gewinn, Menge **pro Gewinner**, bis zu 20 Gewinnern sowie eine animierte, cleane Namens-Enthüllung mit sanft auslaufendem Ticker und Gewinnerkarten (kein Roulette-Rad). Die Gewinner werden **ausschließlich serverseitig** mit `crypto.randomInt()` aus gültigen, eindeutigen Teilnehmerkonten ausgelost und persistent in SQLite gespeichert. Eine erneute Animation ändert kein Ergebnis. Die Animation lässt sich überspringen und respektiert die Einstellung für reduzierte Bewegung. Auch nach Neustarts bleiben die Gewinner bestehen. Wenn kein gültiger Teilnehmer vorhanden ist, gibt es keinen Gewinner. Die Auszahlung/Übergabe erfolgt **nicht automatisch** im Spiel, sondern wird danach von der Moderation als erledigt markiert.
+- **⚔️ Interne Clan-Events** für freigeschaltete Clan-Mitglieder. Die Leitung organisiert Trainings, Clan-Wars, FFAs, Baseraids, Community-Treffen mit Beginn, Dauer, Teilnehmerlimit und An-/Abmeldung.
+- **💰 Öffentlicher HugoSMP-Marktplatz**, der Angebote, Suchanzeigen und Dienstleistungen für Ingame-Items/Spielwährung unterstützt. Jeder darf lesen, für ein Inserat oder eine Meldung braucht man ein Hub-Konto. Ersteller können Anzeigen schließen. Moderatoren können Markt-Meldungen prüfen und unseriöse Anzeigen ausblenden.
+
+**Anmeldung:** Hub-Benutzername + separates Passwort (mindestens zehn Zeichen). **Niemals** das Minecraft- oder Microsoft-Passwort eingeben. Ein gewählter Minecraft-Name ist **nicht verifiziert**.
+
+**Clan-Freischaltung:** Ein Hub-Konto allein erlaubt nicht die Teilnahme an Clan-Events oder **privaten** Giveaways. Ein Administrator muss unter **Clan-Team** das Hub-Konto einem Clan zuordnen. Moderatoren/Admins haben zur Verwaltung Zugriff auf die internen Bereiche. Die Main-Mitgliedschaft kann nicht einfach von Nutzern selbst beansprucht werden.
+
+## Sicherheit und Fairness
+
+- Das Ziehungsergebnis wird nach Ablauf der Endzeit serverseitig automatisch berechnet; der Prozess versucht das regelmäßig und bei der nächsten Anfrage bzw. nach Serverneustart. Falls der Server zur Endzeit offline ist, erfolgt die Ziehung nach dem nächsten Start oder Zugriff.
+- Gewinner werden ohne Zurücklegen ausgelost: höchstens ein Gewinn pro teilnehmendem Hub-Konto. Verschiedene Hub-Konten können grundsätzlich derselben echten Person gehören; mangels Minecraft-Verifizierung kann der Hub das derzeit **nicht** verhindern. Clan-Freischaltungen und transparente Regeln helfen gegen Missbrauch.
+- Ein Giveaway kann **vor** der Ziehung von der Leitung mit Begründung abgebrochen werden; keine manuelle Neuauslosung. Alle Giveaway-Ergebnisse bleiben nachvollziehbar.
+- Ingame-Geld und Items werden **nicht** vom Server übertragen oder verifiziert. Die Moderation dokumentiert die manuelle Übergabe separat.
+- Nutzer melden verdächtige Inserate, jedoch keine automatischen Bans. Nur Ingame-Angebote, **kein Echtgeldhandel** über diese Plattform. Echte Gegenstände, Accounts, Echtgeld oder Zahlungsmethoden nicht anbieten.
+- Alle alten Nutzerkonten, alten Eventdaten und Moderationsdaten bleiben unverändert in ihren bisherigen SQLite-Tabellen erhalten. Alte Community-Event-Frontendseite liegt bei Bedarf unter `/legacy.html` (nicht in der neuen Navigation). Das bestehende Moderationsdashboard bleibt unter `/moderation.html` erreichbar.
+
+## Installation
+
+Node.js **22.13.0 oder neuer**, wegen `node:sqlite`. Ohne externe Abhängigkeiten:
 
 ```bash
-# Im Projektordner
-npm start
-```
-
-Im Browser öffnen: **http://localhost:3030**.
-
-Unter Windows geht alternativ `start-windows.bat`. Beim ersten Start erzeugt die Anwendung ihre **eigene** SQLite-Datenbank unter `data/hub.sqlite`. Es werden **keine** externen Datenbanken oder Supabase-Dienste benutzt.
-
-### Optional: private Vorschau mit zusätzlichem Passwort
-
-```bash
-# PowerShell (Beispielwerte selbst ersetzen)
-$env:SITE_PREVIEW_LOCK = '1'
-$env:TEST_ACCESS_USER = 'nomercy'
-$env:TEST_ACCESS_PASSWORD = 'EIN_EIGENES_LANGES_TESTPASSWORT'
-npm start
-```
-
-Für öffentlichen Testbetrieb: `NODE_ENV=production`, `HOST=0.0.0.0`, `COOKIE_SECURE=1` und ein eigener dauerhafter `DATA_DIR`. `SITE_PREVIEW_LOCK` standardmäßig nicht setzen bzw. `0` – alle Besucher dürfen lesen. Nur mit `SITE_PREVIEW_LOCK=1` ist zusätzlich `TEST_ACCESS_PASSWORD` (mindestens 16 Zeichen) Pflicht. **Keine echten Secrets in GitHub oder Screenshots speichern.**
-
-### Tests
-
-```bash
+npm install
 npm test
+npm start
 ```
 
-Die Tests verwenden temporäre SQLite-Datenbanken und ändern keine bestehenden Daten.
+Standardmäßig unter `http://localhost:3030`. SQLite-Datei unter `data/hub.sqlite`, sofern kein eigener `DATA_DIR` gesetzt ist.
 
-## Verzeichnisstruktur
+### Railway / Produktion
+
+Die bestehende NoMercy-Railway-Installation verwendet eine dedizierte Volume unter `/data` und bleibt getrennt von Supabase und anderen Apps:
+
+- `NODE_ENV=production`, `HOST=0.0.0.0`, `COOKIE_SECURE=1`, `DATA_DIR=/data`, `SITE_PREVIEW_LOCK=0`.
+- Eine **einmalige Admin-Freischaltung** ist über `/moderation.html` vorgesehen. Dafür **nur in Railway Variables** `ADMIN_BOOTSTRAP_TOKEN` auf mindestens 32 kryptografisch zufällige Zeichen setzen, dann mit deinem eigenen Hub-Konto anmelden, den Code dort einmal eingeben und die Variable **danach entfernen**. Code nie in GitHub speichern. Der Code ist kein allgemeiner Login.
+- Nach erfolgreicher Admin-Freischaltung im Clan HQ unter **Clan-Team** Mitglieder freischalten. Moderatoren für die Verwaltung ggf. unter `/moderation.html` ernennen.
+- Backups des eigenen SQLite-Volumes einrichten. Vor großen Updates einen Snapshot sichern.
+- Den alten privaten Vorschaudienst und externe Datenbanken nicht anfassen.
+
+## Entwicklung
 
 ```text
-public/                 HTML, CSS und Frontend-JavaScript
-server.js               HTTP-API, Accounts, Events, SQLite
-start-windows.bat       Windows-Schnellstart
-Dockerfile              Eigenständiger Containerbetrieb
-data/.gitkeep           Platzhalter; Datenbank bleibt lokal
-.github/workflows/       Automatischer Test bei Pull Requests
-tests/                  Integrationstests
-LICENSE                 MIT-Lizenz
-CONTRIBUTING.md         Beitragshinweise
-SECURITY.md             Sicherheitshinweise
+server.js          Authentifizierung, altes Event-/Moderations-API
+clan-hq.js         neue Clan-, Giveaway- und Marktplatz-API
+public/index.html  neuer Einstieg (Clan HQ)
+public/hq.js       neue Oberfläche + Gewinner-Reveal
+public/hq.css      responsives Design
+public/legacy.html alte Eventfinder-Oberfläche (ohne Navigation)
+public/moderation.* bisheriger Moderationsbereich
+tests/             Integrationstests inkl. Gewinner-Stabilität und Zugangsschutz
 ```
 
-## Hosting / Railway
+MIT-Lizenz. Unabhängiges Fanprojekt von NoMercy. Keine Demonutzer und keine erfundenen Angebote/Gewinner im Produktivbetrieb.
 
-Das Repository kann als **eigenständiger Node.js-Service** auf Railway veröffentlicht werden, sobald ein eigenes GitHub-Repository angelegt ist.
 
-- **Neues Railway-Projekt oder eigener Service**; nicht in fremde Apps deployen.
-- `NODE_ENV=production`, `HOST=0.0.0.0`, `COOKIE_SECURE=1`, `DATA_DIR=/data` setzen. Für öffentlich lesbare Events `SITE_PREVIEW_LOCK=0`; für private Tests `SITE_PREVIEW_LOCK=1` und `TEST_ACCESS_PASSWORD` (mindestens 16 Zeichen).
-- **Eigene Railway Volume** an `/data` mounten und `DATA_DIR=/data` setzen.
-- Startbefehl: `npm start`. Der HTTP-Port kommt automatisch von Railway über `PORT`.
-- Für Healthchecks steht `/healthz` zur Verfügung (liefert keine privaten Daten).
+## V0.8.1 Design-Preview (nicht live)
 
-**Hinweis:** Die bestehende Online-Handy-Vorschau wurde zunächst als separate Railway Function erstellt. Dieses Repository enthält den umfangreicheren **V0.3-Quellcode**; erst ein bewusstes Deployment verbindet die Online-Seite mit diesem GitHub-Repository.
+- Eigenständiges NoMercy-Schildmonogramm und eine ruhige Equipment-Illustration ersetzen das generische Raster in der Hero-Karte.
+- Original gezeichnete, kleine Pixel-Item-Symbole für Schwert, Diamant, Chest, Apfel und Ender-Perle in Navigation, Hero und Abschnittsüberschriften. Kein fremdes Bildmaterial, keine externen Icons.
+- Sanftes Schweben, Hover-Effekte, Responsive-Anpassungen, `prefers-reduced-motion`.
+- Funktionalität und Datenbank unverändert; dies ist zunächst ein lokales Designpaket.
+- Offline-Handy-Vorschau: `preview/NoMercy-Hub-v0.8.1-Handy-Demo.html` (JavaScript und CSS eingebettet).
 
-## Sicherheit und Grenzen
+## Clanbank (V0.9, intern)
 
-Minecraft-Identitäten und Teleportziele sind nicht geprüft. Events können PvP, Itemverlust oder Fallen beinhalten. Reports führen nicht zu automatischen Sperren. Vor öffentlichem Launch sind zusätzliche Abuse-Tests, Identitätsprüfung, Backup-/Datenschutzkonzept, Rechte- und Moderationsprüfung notwendig. Die öffentliche Testadresse allein ersetzt keine Sicherheitsprüfung.
+**Eine gemeinsame manuell geführte Ingame-Kasse** für Main, Clan 2 und Clan 3. Sie hat **keine Verbindung zu Echtgeld oder HugoSMP** und beginnt ohne Demo-Bestand mit **0 Mio.**
 
-## Open Source
+- Die Kontostand-/Antrags-/Buchungsansicht unter `/#bank` ist nur für vom Hub-Admin freigeschaltete Clanmitglieder und den Admin sichtbar. Moderatoren ohne Clan-Freigabe haben keinen Bankzugriff.
+- Freigeschaltete Mitglieder können Anträge mit Zweck, Betrag und Begründung stellen; nur der **Hub-Admin** kann genehmigen, ablehnen, Zahlungen bestätigen und Buchungen erfassen.
+- Eine Genehmigung bucht **noch keine Auszahlung**. Erst nach tatsächlicher Ingame-Übergabe führt der Admin die Auszahlung aus. Mehrfachauszahlungen sind blockiert.
+- Der Admin kann Einzahlungen, Auszahlungen und Bestandskorrekturen mit Notiz erfassen. Jede Änderung ist im **unveränderlichen Buchungsverlauf** protokolliert (Aktionsdaten, vorheriger und neuer Kontostand).
+- Beträge werden intern als Ganzzahlen mit **0,001 Mio.** Auflösung gespeichert; Auszahlungen dürfen kein negatives Guthaben verursachen.
+- Keine vorgefertigten Fake-Mitglieder, Anträge oder Kontobewegungen. Alle Kontodaten bleiben in der bestehenden dedizierten SQLite-Datei dieses Hubs.
 
-Dieses Projekt steht unter der **[MIT-Lizenz](LICENSE)**. Beiträge sind willkommen: siehe [CONTRIBUTING.md](CONTRIBUTING.md). Vertrauliche Sicherheitsprobleme bitte gemäß [SECURITY.md](SECURITY.md) melden.
 
-**NoMercy Hub** ist ein inoffizielles Community-Projekt. Minecraft und HugoSMP gehören den jeweiligen Rechteinhabern.
+## Sicherer Release-Prozess
 
-## Moderation sicher einrichten
+Siehe [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md), inklusive manuellem Railway-Volume-Backup, Admin-Aktivierung und Rollback.
 
-1. Im eigenen Hosting (z. B. Railway → `nomercy-hub-v03` → Variables) einen zufälligen geheimen **`ADMIN_BOOTSTRAP_TOKEN` mit mindestens 32 Zeichen** setzen. Nicht committen, nicht im Browser oder Chat öffentlich teilen.
-2. Ein eigenes Hub-Konto registrieren bzw. anmelden. `/moderation.html` öffnen und den Code **einmalig** eingeben. Danach wird genau dieses bestehende Hub-Konto als Admin freigeschaltet.
-3. Nach erfolgreicher Einrichtung **`ADMIN_BOOTSTRAP_TOKEN` aus den Railway-Variablen löschen**. Der Admin bleibt in SQLite bestehen; der Code wird nicht mehr benötigt.
-4. Als Admin lassen sich unter **Team** bestehende Hub-Accounts zu Moderatoren ernennen oder die Rechte entziehen.
-
-Die Moderation nutzt danach normale Hub-Sitzungen, keine Admin-Token im Browser. Normale Besucher können keine Reports abrufen; sie werden individuell manuell bewertet. Jedes Ausblenden, Wiederherstellen und jeder Reportabschluss braucht eine begründete Entscheidung im Audit-Verlauf. Niemand wird automatisch gebannt.
-
-**Achtung:** Ohne sichere Minecraft-Verifizierung können Hub-Namen nichts über die echte Minecraft-Identität aussagen. Der erste Admin wird deshalb *nicht* über einen frei registrierbaren Benutzernamen bestimmt.

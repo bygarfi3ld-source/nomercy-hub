@@ -1,7 +1,7 @@
 {
   "name": "nomercy-hub",
-  "version": "0.4.0",
-  "description": "Unofficial open-source HugoSMP community event hub by NoMercy",
+  "version": "1.0.0",
+  "description": "NoMercy Clan HQ: public/private giveaways, approved clan events, in-game marketplace, private clan bank",
   "license": "MIT",
   "private": false,
   "engines": {

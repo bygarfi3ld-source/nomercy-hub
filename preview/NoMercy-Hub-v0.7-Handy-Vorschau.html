@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111215"><meta name="robots" content="noindex,nofollow"><meta name="description" content="NoMercy Clan HQ – interne Events und Giveaways, plus HugoSMP-Ingame-Kleinanzeigen. Unabhängiges Community-Projekt.">
+<title>NoMercy Hub — V0.7 Design-Vorschau</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;family=Fraunces:ital,wght@1,600&amp;display=swap"><style>:root{--ink:#101115;--dark:#0c0d12;--red:#e43e48;--red2:#ff626a;--paper:#f7f6f3;--muted:#737783;--line:#e6e6e6;--radius:17px}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:'DM Sans',system-ui,sans-serif;background:var(--paper);color:var(--ink)}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}a{color:inherit;text-decoration:none}[hidden]{display:none!important}.wrap{max-width:1180px;margin:auto;padding-left:24px;padding-right:24px}.topbar{background:#0e0f13;color:white;border-bottom:1px solid #292a32;position:sticky;top:0;z-index:30}.topinner{min-height:79px;display:flex;align-items:center;justify-content:space-between;gap:25px}.logo{display:flex;align-items:center;gap:12px;white-space:nowrap}.logo .mark{width:45px;height:45px;border-radius:12px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:19px;letter-spacing:-4px;transform:skewX(-8deg);padding-right:3px}.logo .mark span{color:#101115}.logo strong,.footer strong{font-size:23px;font-weight:900;letter-spacing:-1.3px}.red{color:var(--red)}.logo small{display:block;letter-spacing:2.1px;font-size:9px;color:#9b9ba3;font-weight:800}.nav{display:flex;gap:12px;align-items:center}.nav button{border:0;background:none;color:#b7b9c2;padding:13px 12px;font-size:13px;font-weight:800;white-space:nowrap;border-bottom:2px solid transparent}.nav button:hover,.nav button.active{color:white;border-color:var(--red)}.head-actions{display:flex;align-items:center;gap:12px}.mod-link{color:#c3c5cf;font-weight:800;font-size:12px}.btn{border:1px solid transparent;border-radius:11px;padding:13px 19px;font-weight:800;font-size:13px;display:inline-flex;justify-content:center;align-items:center;gap:12px;transition:transform .18s,background .18s}.btn:hover:not(:disabled){transform:translateY(-1px)}.btn.primary{background:var(--red);color:white}.btn.primary:hover{background:#cb303b}.btn.ghost{color:#f0f0f2;background:#25262d}.btn.outline{background:transparent;border-color:currentColor;color:inherit}.btn.slim{padding:10px 14px}.btn.full{width:100%}.hero{background:var(--dark);color:#fff;overflow:hidden}.hero-grid{min-height:442px;display:grid;grid-template-columns:1.2fr .8fr;align-items:center;gap:20px;padding-top:44px;padding-bottom:50px}.eyebrow,.section-kicker{font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--red)}.eyebrow{display:flex;align-items:center;gap:10px;color:#d8d4d9}.pulse{width:8px;height:8px;border-radius:100%;background:var(--red);box-shadow:0 0 0 5px #e43e4822}.hero h1{font-family:'Barlow Condensed',Impact,sans-serif;font-size:clamp(65px,9vw,113px);line-height:.82;letter-spacing:-1px;margin:24px 0 23px;font-weight:900}.hero h1 em{font-style:normal;color:var(--red)}.hero p{color:#b4b6c0;max-width:560px;font-size:15px;line-height:1.8}.hero-actions{display:flex;gap:13px;margin-top:26px;flex-wrap:wrap}.micro{margin-top:34px;font-weight:800;letter-spacing:1px;font-size:10px;color:#737680}.hero-art{height:335px;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 52%,#4a161f 0,transparent 57%)}.radar{position:absolute;border:1px solid #6e2c3688;border-radius:50%;width:300px;height:300px;transform:rotate(-25deg)}.radar1{width:220px;height:220px}.radar2:after{content:'';position:absolute;inset:22px;border:1px dashed #ffffff26;border-radius:50%}.sword-shadow{position:absolute;font-size:200px;opacity:.11;transform:rotate(-18deg)}.hero-art-head{font-family:'Barlow Condensed',Impact,sans-serif;font-size:110px;letter-spacing:-11px;font-weight:900;transform:rotate(-8deg);text-shadow:6px 11px 0 #ae242e}.hero-art-head span{color:var(--red)}.hero-art-badge{position:absolute;right:10%;top:10%;background:#fff;color:#17171b;padding:15px 18px;font-weight:900;line-height:1;transform:rotate(12deg)}.hero-art-badge b{font-size:25px}.hero-art-label{position:absolute;bottom:5%;left:10%;color:#ffffff91;letter-spacing:2px;font-weight:800;font-size:10px;line-height:1.7}.stats{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid var(--line);margin-top:-1px;border-radius:0 0 17px 17px;box-shadow:0 12px 35px #00000008}.stats>div{padding:24px 22px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px}.stats>div:last-child{border:0}.stats strong{font-family:'Barlow Condensed',Impact,sans-serif;font-size:35px}.stats span{color:var(--muted);font-size:12px;font-weight:700}.content{padding-top:34px;padding-bottom:88px;min-height:430px}.memberbar{background:#fff;border:1px solid var(--line);border-left:4px solid var(--red);padding:16px 20px;border-radius:9px;color:#52555e;font-size:13px;margin-bottom:54px}.sectionhead{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:29px}.sectionhead h2{font-family:'Barlow Condensed',Impact,sans-serif;font-size:clamp(43px,6vw,68px);letter-spacing:-.5px;line-height:.98;margin:14px 0}.sectionhead h2 span{color:var(--red)}.sectionhead p{color:var(--muted);max-width:680px;line-height:1.7;font-size:14px;margin:0}.filterbar{display:flex;gap:12px;margin-bottom:26px;align-items:end;flex-wrap:wrap}.filterbar label{font-size:12px;color:#686b72;font-weight:800;flex:1;min-width:170px}.filterbar label:first-child{flex:2}.filterbar input,.filterbar select{margin-top:6px}input,select,textarea{width:100%;border:1px solid #d9d9dc;background:#fff;border-radius:9px;padding:13px;color:#1e2026;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px #e43e481c}textarea{resize:vertical;min-height:105px}.card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}.tile{background:#fff;border:1px solid #e6e5e5;border-radius:var(--radius);padding:21px;display:flex;flex-direction:column;gap:11px;box-shadow:0 6px 15px #00000004;min-width:0}.tile-top{display:flex;gap:10px;align-items:center;justify-content:space-between}.pill{display:inline-flex;align-items:center;background:#f2f2f3;border-radius:7px;font-size:10px;font-weight:900;padding:7px 9px;letter-spacing:.35px}.pill.red{background:#fff0f0;color:#b9303a}.pill.dark{background:#18191f;color:#fff}.tile h3{font-size:20px;line-height:1.35;letter-spacing:-.65px;margin:0;overflow-wrap:anywhere}.tile .desc{font-size:13px;line-height:1.7;color:#646772;white-space:pre-wrap;overflow-wrap:anywhere;flex:1}.tile .meta{font-size:12px;color:#82848b}.tile .price{font-size:23px;font-weight:900;letter-spacing:-.7px}.tile .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.tile button{flex:1}.tile .btn{padding:10px 12px;font-size:12px}.empty{grid-column:1/-1;background:#fff;border:1px dashed #d6d6d8;padding:45px;text-align:center;border-radius:var(--radius);color:#666a74}.empty strong{display:block;color:var(--ink);font-size:19px;margin-bottom:10px}.countdown{font-variant-numeric:tabular-nums;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:23px}.progress{height:5px;background:#eee;border-radius:4px;overflow:hidden}.progress>div{background:var(--red);height:100%;border-radius:4px}.footer{background:#0e0f13;color:#fff}.footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:25px;padding-top:39px;padding-bottom:39px}.footer p{color:#8a8d96;font-size:11px;max-width:450px}.footer a{display:inline-block;margin-left:22px;color:#b3b4bf;font-size:13px}.dialog{padding:0;border:0;border-radius:19px;width:min(94vw,530px);max-height:92vh;overflow-y:auto;background:#fff;color:var(--ink);box-shadow:0 25px 80px #0009}.dialog::backdrop{background:#090a0dcc;backdrop-filter:blur(5px)}.dialog-inner{padding:29px}.dialog-top{display:flex;align-items:start;justify-content:space-between;gap:18px;margin-bottom:25px}.dialog-top h2{font-family:'Barlow Condensed',Impact,sans-serif;font-size:42px;line-height:1;margin:10px 0 0;text-transform:uppercase}.icon-close{background:#f2f2f3;border:0;width:38px;height:38px;flex:0 0 38px;border-radius:10px;font-weight:900}.form{display:grid;gap:14px}.form label,.inline-form label{font-size:12px;font-weight:800;color:#555863}.form input,.form select,.form textarea,.inline-form input,.inline-form select{display:block;margin-top:7px}.form small{font-size:11px;color:#898b94}.dialog-error{color:#ae232e;background:#fff1f2;border-radius:8px;padding:13px;font-size:12px;font-weight:700}.textlink{border:0;background:none;padding:10px 0;color:#bb303d;font-weight:800;font-size:13px}.form-panel{border-radius:17px;background:#fff;border:1px solid var(--line);padding:23px;margin-bottom:20px}.form-panel h3{margin:0 0 15px}.inline-form{display:flex;gap:12px;align-items:end}.inline-form label{flex:1}.toast{position:fixed;z-index:100;bottom:25px;right:24px;background:#13151b;color:#fff;border-left:5px solid var(--red);border-radius:12px;padding:17px 20px;box-shadow:0 8px 28px #0005;display:none;max-width:360px;font-size:13px;font-weight:700}.toast.show{display:block}.tag{display:inline-block;color:#747783;font-size:11px}.muted{color:#85858d}.spark{font-size:22px}.banner{background:#15151a;color:white;padding:18px;border-radius:10px;font-size:12px;line-height:1.6}.banner b{color:#ff8890}
+@media(max-width:1020px){.topinner{flex-wrap:wrap;padding-top:13px;padding-bottom:0;gap:10px}.nav{order:3;width:100%;overflow:auto;justify-content:space-between}.nav button{padding:13px 7px}.hero-art-head{font-size:78px}.card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:680px){.wrap{padding-left:16px;padding-right:16px}.logo strong{font-size:20px}.hero-grid{display:block;min-height:0;padding-top:45px}.hero-art{height:175px;margin:15px 0 0}.hero-art-head{font-size:78px}.radar{width:180px;height:180px}.radar1{width:120px;height:120px}.hero-art-label{display:none}.hero h1{font-size:73px}.hero p{font-size:13px}.micro{font-size:9px;line-height:1.8}.stats{grid-template-columns:repeat(2,1fr)}.stats>div{padding:18px;border-bottom:1px solid var(--line)}.stats>div:nth-child(2){border-right:0}.sectionhead{align-items:start;flex-direction:column}.sectionhead h2{font-size:51px}.card-grid{grid-template-columns:1fr}.footer .wrap{flex-direction:column;align-items:start}.footer a{margin-left:0;margin-right:18px}.inline-form{flex-direction:column;align-items:stretch}.nav button{font-size:12px}.mod-link{display:none}.head-actions{margin-left:auto}.btn{padding:12px}.dialog-inner{padding:20px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.empty-action{margin-top:15px}.mod-report-card{margin:11px 0}.progress>div{width:100%}
+
+
+/* NoMercy Black Label · clean name-reveal sequence (never a roulette wheel) */
+.spin-dialog{width:min(94vw,660px);max-height:min(94vh,820px);background:#101116;color:#f6f5f6;border:1px solid #35343b;border-radius:23px;overflow:auto}
+.spin-dialog::backdrop{background:#05060ce8;backdrop-filter:blur(9px)}
+.draw-shell{min-height:100%;background:radial-gradient(ellipse 85% 55% at 50% 33%,#42161f62 0%,transparent 77%),linear-gradient(148deg,#17181f,#101115 67%);position:relative;overflow:hidden}
+.draw-shell:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(108deg,transparent 33%,#ffffff04 47%,transparent 61%)}
+.draw-topbar{padding:23px 29px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ffffff16;position:relative;z-index:1}
+.draw-brand{display:flex;align-items:center;gap:13px}
+.draw-mark{display:grid;place-items:center;height:39px;min-width:43px;border-radius:10px;background:var(--red);font-weight:950;font-size:15px;letter-spacing:-1px;color:white}
+.draw-mark span{color:#111}
+.draw-brand-label{font-size:11px;letter-spacing:2.4px;font-weight:900;color:#f5f3f5}
+.draw-brand-label b{color:#ee5560;font-weight:900;padding:0 3px}
+.draw-close{background:#ffffff12;border:1px solid #ffffff1b;color:#eee;border-radius:9px;width:38px;height:38px;transition:background .2s,transform .2s}
+.draw-close:hover{background:#ffffff26;transform:rotate(90deg)}
+.draw-close:focus-visible,.draw-skip:focus-visible,.spin-dialog .btn:focus-visible{outline:2px solid #ff747f;outline-offset:4px}
+.draw-body{padding:34px 36px 30px;position:relative;z-index:1}
+.draw-eyebrow{font-size:10px;color:#b5b5bf;letter-spacing:2.3px;font-weight:900;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.draw-live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px #e43e4822;animation:draw-breathe 2.2s ease-in-out infinite}
+.draw-tag{margin-left:auto;color:#ffb3b8;border:1px solid #e43e4859;border-radius:5px;padding:5px 8px;font-size:9px;letter-spacing:1.3px}
+.draw-heading{font-family:'Barlow Condensed',Impact,sans-serif;font-weight:900;font-size:clamp(48px,8vw,77px);line-height:.94;letter-spacing:-1.2px;margin:21px 0 11px}
+.draw-heading em{font-style:normal;color:#ed4653}
+.draw-prize{margin:0 0 29px;font-weight:600;font-size:12px;line-height:1.6;color:#adaeba;overflow-wrap:anywhere}
+.draw-progress-line{height:2px;background:#ffffff18;overflow:hidden;border-radius:5px}
+.draw-progress-line span{display:block;width:0;height:100%;background:linear-gradient(90deg,#d53542,#ff8790);transition:width .6s cubic-bezier(.2,.75,.25,1)}
+.draw-round{display:flex;justify-content:space-between;align-items:center;font-weight:900;letter-spacing:2px;font-size:10px;color:#9d9eac;padding:14px 0 16px}
+.draw-round strong{color:#fff;font-variant-numeric:tabular-nums;font-size:12px}
+.draw-round strong span{color:#f05660;margin:0 4px}
+.draw-stage{height:250px;position:relative;border-radius:15px;overflow:hidden;border:1px solid #ffffff29;background:linear-gradient(145deg,#24232c 0%,#17181e 57%,#1c151b 100%);box-shadow:inset 0 1px #ffffff0f,0 20px 40px #0005;display:flex;align-items:center;justify-content:center;flex-direction:column;isolation:isolate}
+.draw-stage:before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,#e3424b14,transparent 65%);opacity:.25;transition:opacity .45s}
+.draw-stage:after{content:'';position:absolute;inset:-80% -30%;background:linear-gradient(100deg,transparent 42%,#ffffff08 49%,#ffffff05 51%,transparent 58%);transform:translateX(-110%) rotate(-10deg);z-index:1;pointer-events:none}
+.draw-stage.rolling:after{animation:draw-shine 2.5s linear infinite}
+.draw-corner{position:absolute;width:20px;height:20px;border-color:#ffffff4a;z-index:2;pointer-events:none}
+.draw-corner-tl{top:14px;left:14px;border-top:1px solid;border-left:1px solid}.draw-corner-tr{top:14px;right:14px;border-top:1px solid;border-right:1px solid}.draw-corner-bl{bottom:14px;left:14px;border-bottom:1px solid;border-left:1px solid}.draw-corner-br{bottom:14px;right:14px;border-bottom:1px solid;border-right:1px solid}
+.draw-stage-top{position:absolute;top:25px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:2.2px;white-space:nowrap;color:#ffffff65;font-weight:800}
+.draw-reel{width:100%;height:146px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;overflow:hidden;position:relative;z-index:2;mask-image:linear-gradient(to bottom,transparent,#000 26%,#000 74%,transparent)}
+.draw-reel-ghost{font-weight:700;text-align:center;letter-spacing:1.5px;font-size:12px;color:#a1a1ab4c;line-height:1;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.draw-reel-name{font-family:'Barlow Condensed',Impact,sans-serif;font-size:clamp(34px,8vw,57px);font-weight:900;line-height:1.2;letter-spacing:1px;white-space:nowrap;max-width:92%;text-overflow:ellipsis;overflow:hidden;color:#fff;text-shadow:0 3px 18px #0004;transform:translateY(0)}
+.draw-reel-name.draw-tick{animation:draw-name-step .14s ease-out both}
+.draw-stage.rolling .draw-reel-name{color:#efedf0}
+.draw-stage-bottom{position:absolute;bottom:27px;display:flex;align-items:center;gap:8px;font-size:9px;letter-spacing:1.2px;color:#a5a3af;font-weight:800;z-index:2;text-align:center;padding:0 20px}
+.draw-stage-led{width:5px;height:5px;border-radius:50%;background:#e43e48}
+.draw-stage.revealed{border-color:#ed56605c;animation:draw-reveal-edge .7s ease-out}
+.draw-stage.revealed:before{opacity:1}
+.draw-stage.revealed .draw-reel-name{color:#fff;animation:draw-winner-appear .72s cubic-bezier(.16,1,.3,1) both;text-shadow:0 0 40px #f95e6a4c}
+.draw-stage.revealed .draw-corner{border-color:#ff727e}
+.draw-sparks{position:absolute;inset:0;pointer-events:none;z-index:3}
+.draw-sparks i{position:absolute;top:50%;left:50%;display:block;width:4px;height:12px;border-radius:2px;background:#fa8089;opacity:0}
+.draw-sparks i:nth-child(1){--a:-160deg;--d:95px}.draw-sparks i:nth-child(2){--a:-115deg;--d:88px}.draw-sparks i:nth-child(3){--a:-67deg;--d:100px}.draw-sparks i:nth-child(4){--a:-23deg;--d:106px}.draw-sparks i:nth-child(5){--a:26deg;--d:103px}.draw-sparks i:nth-child(6){--a:74deg;--d:90px}.draw-sparks i:nth-child(7){--a:125deg;--d:96px}.draw-sparks i:nth-child(8){--a:165deg;--d:107px}
+.draw-stage.revealed .draw-sparks i{animation:draw-spark-flight .9s ease-out both}
+.draw-sparks i:nth-child(even){background:#fff3df;height:5px;width:5px;border-radius:50%}
+.spin-status{text-align:center;font-weight:700;font-size:12px;letter-spacing:.2px;padding:20px 0 13px;color:#dddfe8;min-height:49px}
+.draw-winners-head{display:flex;justify-content:space-between;letter-spacing:1.9px;font-weight:900;font-size:10px;color:#a8a8b3;margin:13px 0 10px}
+.draw-winners-head #drawWinnerCount{color:#ff858e;font-variant-numeric:tabular-nums}
+.spin-winners{display:grid;grid-template-columns:1fr;gap:8px;max-height:190px;overflow:auto}
+.winner-entry{display:flex;align-items:center;gap:16px;min-height:46px;padding:10px 14px;border-radius:9px;background:#ffffff0b;border:1px solid #ffffff1d;animation:draw-card-enter .5s cubic-bezier(.19,1,.22,1) both}
+.winner-rank{color:#e76a76;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}
+.winner-entry strong{flex:1;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:13px}
+.winner-check{font-size:9px;letter-spacing:.8px;color:#93d4b0;font-weight:900;white-space:nowrap}
+.draw-actions{display:flex;align-items:center;flex-direction:column;gap:10px;margin:19px 0 0}
+.draw-actions .btn{width:100%;min-height:47px;border-radius:9px;justify-content:space-between;padding:14px 19px}
+.draw-skip{color:#a8a6b1;font-size:11px;font-weight:800;border:0;background:transparent;padding:10px 14px;transition:color .2s}
+.draw-skip:hover{color:white}
+.spin-note{margin:20px 0 0;text-align:center;color:#858693;font-size:10px;line-height:1.75}
+@keyframes draw-name-step{from{opacity:.5;transform:translateY(13px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes draw-winner-appear{0%{opacity:.15;transform:translateY(18px) scale(.96)}65%{opacity:1;transform:translateY(-4px) scale(1.055)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes draw-reveal-edge{0%,100%{box-shadow:inset 0 1px #ffffff0f,0 20px 40px #0005}40%{box-shadow:0 0 0 1px #f56d7866,0 0 38px #e43e483f}}
+@keyframes draw-spark-flight{0%{opacity:1;transform:translate(-50%,-50%) rotate(var(--a)) translateY(0) scale(.7)}35%{opacity:.85}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--a)) translateY(calc(-1 * var(--d))) scale(.3)}}
+@keyframes draw-card-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes draw-shine{to{transform:translateX(110%) rotate(-10deg)}}
+@keyframes draw-breathe{50%{box-shadow:0 0 0 7px #e43e4808}}
+@media(max-width:680px){.spin-dialog{width:95vw;max-height:94dvh;border-radius:18px}.draw-topbar{padding:16px 19px}.draw-body{padding:23px 20px 25px}.draw-heading{font-size:clamp(47px,12vw,66px)}.draw-tag{margin-left:0}.draw-stage{height:220px}.draw-stage-top{top:21px}.draw-stage-bottom{bottom:21px}.draw-reel{height:128px}.draw-reel-name{font-size:clamp(31px,9vw,47px)}}
+@media(prefers-reduced-motion:reduce){.draw-sparks{display:none}.draw-reel-name.draw-tick,.draw-stage.revealed .draw-reel-name,.winner-entry,.draw-stage.revealed,.draw-stage.rolling:after{animation:none!important}.draw-progress-line span{transition:none!important}}
+
+/* Calm motion language across the HQ: float in, not flash or bounce. */
+.hero-grid > div:first-child{animation:hq-enter .7s cubic-bezier(.22,1,.36,1) both}
+.hero-art-head{animation:hq-emblem-float 8s ease-in-out infinite alternate}
+.tile{transition:transform .26s ease,border-color .26s ease,box-shadow .26s ease;animation:hq-enter .45s cubic-bezier(.22,1,.36,1) both}
+.tile:nth-child(2){animation-delay:.06s}.tile:nth-child(3){animation-delay:.12s}.tile:nth-child(4){animation-delay:.18s}
+.tile:hover{transform:translateY(-4px);box-shadow:0 14px 37px #00000012;border-color:#dbd7d8}
+.toast.show{animation:hq-enter .32s cubic-bezier(.22,1,.36,1) both}
+@keyframes hq-enter{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes hq-emblem-float{0%{transform:translateY(0) rotate(-8deg)}100%{transform:translateY(-9px) rotate(-7deg)}}
+@media(prefers-reduced-motion:reduce){.hero-grid > div:first-child,.hero-art-head,.tile,.toast.show{animation:none!important}.tile:hover{transform:none}}
+/*
+ * NoMercy / Quiet Confidence UI
+ * V0.7: editorial hierarchy, soft-radius surfaces, subtle motion, accessible skeletons.
+ * This layer intentionally overrides the MVP styles without changing APIs or data.
+ */
+:root{
+ --ink:#18191e; --dark:#111216; --red:#d94752; --red2:#ed6670;
+ --paper:#f6f5f2; --muted:#757781; --line:#e7e5e3; --radius:24px;
+ --ink-soft:#41434b; --shadow:0 18px 54px rgba(27,24,28,.055);
+ --ease:cubic-bezier(.22,1,.36,1);
+ --font-body:'DM Sans',Inter,system-ui,-apple-system,sans-serif;
+ --font-display:'Manrope','Inter Display',Inter,sans-serif;
+}
+html{scroll-padding-top:130px}
+body{font-family:var(--font-body);font-size:14px;-webkit-font-smoothing:antialiased;background:var(--paper);background-image:radial-gradient(ellipse at 70% 25%,#fdfaf8 0,transparent 58%)}
+button,input,textarea,select{font-family:var(--font-body)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid rgba(217,71,82,.5);outline-offset:3px}
+.wrap{max-width:1220px;padding-left:clamp(20px,4vw,52px);padding-right:clamp(20px,4vw,52px)}
+.topbar{background:#111216f7;border-bottom:1px solid #ffffff0e;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 3px 18px #0000001c}
+.topinner{min-height:86px;gap:28px}
+.logo{gap:13px}
+.logo .mark{height:44px;width:46px;font-family:var(--font-display);font-size:21px;letter-spacing:-3px;text-indent:-3px;font-weight:800;border-radius:16px;background:linear-gradient(145deg,#ed5b64,#c53140);box-shadow:inset 0 1px 0 #ffffff52,0 9px 26px #c9364b30}
+.logo .mark span{color:#fff}
+.logo strong,.footer strong{font-family:var(--font-display);font-size:22px;letter-spacing:-1.15px;font-weight:800}
+.logo small{font-family:var(--font-body);font-weight:600;letter-spacing:1.9px;color:#92939c;font-size:9px;margin-top:2px}
+.nav{background:#ffffff0c;border:1px solid #ffffff10;padding:5px;gap:2px;border-radius:18px}
+.nav button{border:0;border-radius:13px;padding:11px 15px;color:#a5a5b0;font-size:12px;font-weight:650;letter-spacing:-.1px;transition:color .24s,background .24s,box-shadow .24s}
+.nav button:hover{color:#fff;background:#ffffff0b;border-color:transparent}
+.nav button.active{color:#fff;border-color:transparent;background:#ffffff17;box-shadow:inset 0 1px #ffffff12}
+.nav-glyph{font-size:14px;color:#d86b71;margin-right:4px}
+.head-actions .btn{white-space:nowrap}
+.mod-link{font-weight:600}
+.btn{border-radius:15px;padding:13px 20px;gap:10px;min-height:46px;letter-spacing:-.15px;font-weight:750;transition:transform .27s var(--ease),box-shadow .27s,background .22s,border-color .22s}
+.btn:hover:not(:disabled){transform:translateY(-2px)}
+.btn:active:not(:disabled){transform:translateY(0) scale(.985)}
+.btn.primary{background:linear-gradient(135deg,#e24d58,#cb3948);box-shadow:0 8px 22px #bd354323;color:#fff}
+.btn.primary:hover{background:linear-gradient(135deg,#ef6872,#d54150);box-shadow:0 12px 30px #bd354341}
+.btn.ghost{background:#ffffff11;color:#f1eef1;border:1px solid #ffffff12}
+.btn.ghost:hover{background:#ffffff1e}
+.btn.outline{border-color:#d9d7d5;color:var(--ink);background:#ffffffed}
+.btn.outline:hover{border-color:#a5a2a3;box-shadow:0 6px 20px #16161b0c}
+.hero{color:#fff;background:radial-gradient(ellipse 80% 80% at 99% 2%,#362026 0,transparent 67%),#121318;border-radius:0 0 38px 38px;position:relative}
+.hero:before{content:'';position:absolute;inset:0 0 0 0;background-image:radial-gradient(#ffffff0c .7px,transparent .8px);background-size:23px 23px;mask-image:linear-gradient(90deg,transparent 42%,#000 100%);pointer-events:none}
+.hero-grid{min-height:530px;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:clamp(38px,7vw,98px);padding-top:58px;padding-bottom:95px}
+.hero-copy{position:relative;z-index:1;max-width:650px}
+.eyebrow{font-size:11px;letter-spacing:.6px;font-weight:700;color:#ddd9da;text-transform:none}
+.pulse{width:7px;height:7px;background:#ed606c;box-shadow:0 0 0 5px #e43e4822}
+.hero h1{font-family:var(--font-display);font-weight:800;font-size:clamp(58px,6.4vw,88px);line-height:1.04;letter-spacing:-5px;margin:28px 0 21px;text-wrap:balance}
+.hero h1 .hero-thin{font-weight:400;color:#cdc7cb}
+.hero h1 em{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:1.055em;letter-spacing:-4px;font-style:italic;color:#f27882}
+.hero p{font-size:15px;max-width:500px;color:#aeadb8;line-height:1.78;font-weight:450;margin:0}
+.hero-actions{margin-top:31px;gap:11px}
+.hero-actions .outline{color:#f2f0f2;background:#ffffff0b;border-color:#ffffff35}
+.hero-actions .outline:hover{background:#ffffff18;border-color:#ffffff55}
+.hero-foot{margin-top:34px;color:#a4a0ab;font-size:11px;font-weight:500;letter-spacing:.1px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.hero-foot-dot{width:7px;height:7px;border-radius:50%;background:#78bc92}
+.hero-foot-divider{color:#5f5e66;margin:0 3px}
+.hero-art{height:370px;border-radius:30px;display:flex;flex-direction:column;align-self:center;justify-content:space-between;padding:22px 24px;background:radial-gradient(ellipse at 53% 56%,#38252a 0,#19191f 42%,#17181d 70%);border:1px solid #ffffff23;box-shadow:inset 0 1px #ffffff20,0 25px 80px #00000037;isolation:isolate;overflow:hidden}
+.hero-art:after{content:'';position:absolute;inset:0;z-index:-1;background-image:linear-gradient(#ffffff07 1px,transparent 1px),linear-gradient(90deg,#ffffff07 1px,transparent 1px);background-size:35px 35px;mask-image:linear-gradient(130deg,#000 15%,transparent 78%)}
+.hero-art-top,.hero-art-bottom{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:10px;color:#aca9b4;font-size:10px;letter-spacing:1.5px;font-weight:750}
+.hero-art-star{font-size:22px;font-weight:400;color:#f27781;animation:hq-art-spin 18s linear infinite}
+.hero-art-center{height:215px;position:relative;display:grid;place-items:center;isolation:isolate}
+.hero-art-orbit{position:absolute;border:1px solid #ffffff15;border-radius:50%;width:215px;height:215px;transform:rotate(-23deg)}
+.orbit-b{height:155px;width:155px;border-style:dashed;border-color:#f2778130;transform:rotate(33deg)}
+.hero-art-emblem{position:relative;font-family:var(--font-display);font-weight:800;letter-spacing:-17px;font-size:clamp(95px,11vw,138px);line-height:1;color:#fff;z-index:1;transform:translateX(-9px);text-shadow:0 18px 55px #0009;animation:hq-emblem-float 8s ease-in-out infinite alternate}
+.hero-art-emblem span{color:#ed6773;letter-spacing:0}
+.hero-art-float{font-size:9px;letter-spacing:1px;font-weight:800;color:#d7c1c5;position:absolute;border:1px solid #ffffff2d;border-radius:999px;background:#272329d9;padding:9px 11px;backdrop-filter:blur(6px);z-index:2}
+.hero-art-float.f1{top:38px;right:4px;transform:rotate(-6deg)}
+.hero-art-float.f2{bottom:22px;left:6px;transform:rotate(5deg)}
+.hero-art-bottom{border-top:1px solid #ffffff14;padding-top:17px}
+.hero-art-bottom b{font-weight:800;color:#fff;margin-left:12px;letter-spacing:.7px}
+.hero-art-arrow{font-size:17px;font-weight:400;line-height:1;color:#f27781}
+.stats{max-width:1120px;position:relative;z-index:3;margin-top:-36px;background:#fff;border-radius:26px;border:1px solid #ebe8e7;box-shadow:0 18px 55px #1812180c;grid-template-columns:1.45fr repeat(4,1fr);overflow:hidden;padding:0 10px}
+.stats .stats-heading{display:flex;flex-direction:column;justify-content:center;gap:7px;padding:23px 27px;border-right:1px solid #eeecea}
+.stats-heading>span{color:#a2a0a2;font-size:9px;letter-spacing:2px;font-weight:800}
+.stats .stats-heading>strong{font-family:var(--font-display);font-size:15px;letter-spacing:-.4px;font-weight:800;line-height:1.4}
+.stats>div{padding:22px 13px 23px;border-right:1px solid #eeecea;justify-content:center;min-width:0}
+.stats>div:last-child{border:0}
+.stats strong{font-family:var(--font-display);font-size:26px;letter-spacing:-1px;font-weight:800;line-height:1.3;font-variant-numeric:tabular-nums}
+.stats span{font-size:11px;font-weight:600;color:#8b8c94;line-height:1.45}
+.content{padding-top:60px;padding-bottom:110px}
+.memberbar{padding:15px 22px 15px 51px;border-radius:17px;color:#575963;background:#fff;border:1px solid #eae7e4;border-left:1px solid #eae7e4;box-shadow:0 7px 24px #17171706;position:relative;font-size:12px;line-height:1.65;margin-bottom:54px}
+.memberbar:before{content:'✦';position:absolute;left:17px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:24px;height:24px;border-radius:9px;color:#ba404b;background:#fce7e8;font-size:13px}
+.sectionhead{align-items:center;margin-bottom:29px;gap:24px}
+.section-kicker{display:inline-flex;align-items:center;gap:11px;font-family:var(--font-body);font-weight:800;font-size:11px;letter-spacing:.65px;text-transform:none;color:#b14b53}
+.section-kicker i{width:26px;height:1px;background:#d7c8c5;display:inline-block}
+.sectionhead h2{font-family:var(--font-display);font-size:clamp(32px,4.3vw,56px);line-height:1.13;letter-spacing:-2.2px;font-weight:800;margin:14px 0 15px;text-wrap:balance}
+.sectionhead h2 span{color:#d14856}
+.sectionhead p{font-size:14px;line-height:1.76;max-width:580px;color:#777782}
+.tab-panel{transform-origin:50% 0}
+.tab-panel.panel-enter{animation:hq-panel-enter .52s var(--ease) both}
+#giveawaysPanel .sectionhead h2{font-family:var(--font-display);letter-spacing:-2.7px}
+#giveawaysPanel .sectionhead h2 span{font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:600;letter-spacing:-1.2px;color:#bc4855}
+#eventsPanel .sectionhead h2{font-family:'Cabin',var(--font-display);font-weight:700;letter-spacing:-1px}
+#membersPanel .sectionhead h2{font-family:'Cabin',var(--font-display);letter-spacing:-1.1px}
+.filterbar{padding:15px;background:#fff;border:1px solid #e8e6e5;border-radius:23px;gap:12px;margin-bottom:24px;box-shadow:0 12px 28px #18151a05}
+.filterbar label{font-size:11px;letter-spacing:.05px;font-weight:750;color:#74747d;min-width:165px}
+.filterbar input,.filterbar select{margin-top:7px}
+.filterbar .btn{border-radius:13px;min-height:46px;background:#f9f8f7}
+input,select,textarea{border:1px solid #e5e3e3;border-radius:14px;padding:13px 15px;background:#f9f9f8;transition:background .2s,border-color .2s,box-shadow .2s}
+input::placeholder,textarea::placeholder{color:#aaa9ae}
+input:focus,select:focus,textarea:focus{background:#fff;border-color:#db5c67;box-shadow:0 0 0 4px #de626817}
+.card-grid{gap:18px;min-height:200px}
+.tile{border:1px solid #eeeceb;background:#fff;border-radius:24px;padding:22px 23px;box-shadow:0 9px 29px #24202707;gap:13px;position:relative;overflow:hidden;animation:hq-card-enter .52s var(--ease) both;transition:transform .32s var(--ease),border-color .3s,box-shadow .3s}
+.tile:before{content:'';position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#e9a3a7,#c64854);opacity:0;transition:opacity .32s}
+.tile:hover{border-color:#e3d5d5;transform:translateY(-5px);box-shadow:0 17px 43px #271b240e}
+.tile:hover:before{opacity:.8}
+.tile:nth-child(2){animation-delay:.06s}.tile:nth-child(3){animation-delay:.12s}.tile:nth-child(4){animation-delay:.18s}
+.tile .meta{font-size:11px;color:#8c8d95;line-height:1.75}
+.tile h3{font-family:var(--font-display);font-size:21px;line-height:1.27;font-weight:800;letter-spacing:-.65px;margin:3px 0 0}
+#eventsPanel .tile h3{font-family:'Cabin',var(--font-display);letter-spacing:-.3px}
+.tile .desc{font-size:13px;line-height:1.8;color:#757782}
+.tile .price{font-family:var(--font-display);font-size:25px;font-weight:800;letter-spacing:-1px;margin-top:2px}
+.tile .pill{font-size:10px;letter-spacing:.4px;border-radius:999px;padding:8px 11px;background:#f2f1f0;color:#60616a}
+.tile .pill.red{color:#bc3e4d;background:#fff0f1}
+.tile .pill.dark{background:#212228;color:#faf9f9}
+.tile .actions{border-top:1px solid #f0eeee;padding-top:16px;margin-top:auto}
+.tile .actions .btn{border-radius:13px;font-size:12px;padding:10px 12px;min-height:42px}
+.tile .countdown{font-family:var(--font-display);font-size:22px;letter-spacing:-.7px;font-weight:750;color:#303139}
+.tile .progress{height:5px;background:#f3e7e7}
+.tile .progress>div{background:linear-gradient(90deg,#d7505b,#f0979e)}
+.empty{border:1px dashed #e1dddb;border-radius:25px;background:#fff;min-height:225px;color:#85838b;line-height:1.7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:28px 24px;box-shadow:0 9px 25px #24202705}
+.empty:before{content:'✧';font-family:Georgia,serif;color:#d4656f;font-size:31px;line-height:1.5;margin-bottom:1px}
+.empty strong{font-family:var(--font-display);font-size:17px;letter-spacing:-.4px;line-height:1.4;margin:0;color:#33343a}
+.empty .empty-action{margin-top:13px}
+.form-panel{background:#fff;border:1px solid #ebe8e5;border-radius:23px;box-shadow:var(--shadow);padding:24px}
+.dialog{border-radius:27px;box-shadow:0 35px 100px #0008}
+.dialog::backdrop{background:#0d0c14bf;backdrop-filter:blur(9px)}
+.dialog-inner{padding:clamp(23px,4vw,35px)}
+.dialog-top h2{font-family:var(--font-display);text-transform:none;font-size:30px;letter-spacing:-1.5px;line-height:1.16}
+.icon-close{border-radius:13px}
+.footer{background:#15161a;border-radius:36px 36px 0 0}
+.footer .wrap{padding-top:52px;padding-bottom:52px}
+.footer p{line-height:1.7;font-size:12px}
+.footer a{transition:color .2s}
+.footer a:hover{color:#fff}
+.toast{border-radius:16px}
+/* Elegant name reveal, harmonized with the public interface. */
+.spin-dialog{border-radius:30px;background:#14151a;max-height:94dvh}
+.draw-shell{background:radial-gradient(ellipse at 50% 36%,#3b2329 0,transparent 69%),linear-gradient(145deg,#17181e,#101115)}
+.draw-heading{font-family:var(--font-display);font-weight:800;letter-spacing:-2.2px;font-size:clamp(36px,6.5vw,55px);line-height:1.1;margin-top:18px}
+.draw-heading em{font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:600;letter-spacing:-1.2px;color:#ef7a84}
+.draw-stage{border-radius:25px;border-color:#ffffff21;background:radial-gradient(ellipse at 50% 50%,#30252a 0,#1c1c22 63%,#18191e);box-shadow:inset 0 1px #ffffff12,0 18px 42px #0004}
+.draw-reel-name{font-family:var(--font-display);font-size:clamp(30px,7vw,48px);font-weight:800;letter-spacing:-1px}
+.draw-reel-ghost{font-family:var(--font-body);letter-spacing:-.15px}
+.draw-mark{border-radius:13px;background:linear-gradient(135deg,#ed616b,#cc3d4a);font-family:var(--font-display);font-size:19px;letter-spacing:-3px}
+.draw-mark span{color:#fff}
+.draw-tag{border-radius:999px;padding:7px 11px;border-color:#ed788044}
+.draw-close{border-radius:12px}
+.draw-actions .btn{border-radius:15px}
+.winner-entry{border-radius:15px;padding:14px 16px;background:#ffffff10}
+/* A genuine skeleton state: never fabricated marketplace/event entries. */
+.skeleton-card{min-height:267px;background:#fff;border:1px solid #eeeceb;border-radius:24px;padding:25px 23px;display:flex;flex-direction:column;gap:19px;overflow:hidden;box-shadow:0 9px 29px #24202704}
+.skeleton-line{display:block;height:12px;border-radius:999px;background:#eeebea;position:relative;overflow:hidden}
+.skeleton-line:before,.skeleton-block:before{content:'';position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(95deg,transparent 0,#faf9f9e9 50%,transparent 100%);animation:hq-skeleton-shimmer 1.35s ease-in-out infinite}
+.skeleton-line.sm{width:33%;height:10px}.skeleton-line.md{width:69%}.skeleton-line.lg{width:88%;height:23px}.skeleton-line.short{width:48%}
+.skeleton-block{position:relative;overflow:hidden;background:#f1efee;border-radius:13px;height:52px;margin-top:auto}
+.card-grid[aria-busy='true'] .skeleton-card{pointer-events:none}
+/* A little secondary affordance without extra clutter */
+.sectionhead>.btn{flex-shrink:0}
+@keyframes hq-panel-enter{from{opacity:0;transform:translateY(11px)}to{opacity:1;transform:translateY(0)}}
+@keyframes hq-card-enter{from{opacity:0;transform:translateY(15px) scale(.989)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes hq-skeleton-shimmer{to{transform:translateX(110%)}}
+@keyframes hq-art-spin{to{transform:rotate(360deg)}}
+@media(max-width:1050px){
+ .topinner{gap:12px}
+ .nav button{padding:10px 12px}
+ .hero-grid{gap:28px}
+ .stats{max-width:calc(100% - 36px)}
+ .stats .stats-heading{padding:14px}
+}
+@media(max-width:680px){
+ .topbar{position:sticky;top:0}
+ .topinner{padding-top:12px;padding-bottom:9px;gap:11px}
+ .logo{gap:9px}
+ .logo .mark{height:41px;width:41px;font-size:18px;border-radius:14px}
+ .logo strong{font-size:19px}
+ .logo small{font-size:8px;letter-spacing:1.3px}
+ .head-actions{margin-left:auto}
+ .head-actions .btn{min-height:39px;padding:10px 13px;border-radius:12px;font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+ .nav{order:3;width:100%;gap:4px;padding:4px;margin:1px 0 0;justify-content:space-between;border-radius:13px;overflow-x:auto;background:#ffffff0a}
+ .nav button{font-size:11px;padding:10px 12px;border-radius:10px;flex:1;white-space:nowrap}
+ .nav-glyph{font-size:11px;margin-right:2px}
+ .hero{border-radius:0 0 30px 30px}
+ .hero-grid{padding-top:49px;padding-bottom:73px;display:block;min-height:0}
+ .eyebrow{font-size:10px}
+ .hero h1{font-size:clamp(49px,12.4vw,67px);letter-spacing:-3.6px;line-height:1.08;margin:25px 0 20px}
+ .hero h1 em{letter-spacing:-2.6px}
+ .hero p{font-size:13px;line-height:1.8}
+ .hero-actions{gap:10px;margin-top:27px}
+ .hero-actions .btn{font-size:12px;padding:11px 15px;min-height:45px}
+ .hero-foot{font-size:10px;line-height:1.5;margin-top:28px}
+ .hero-art{height:238px;margin-top:39px;border-radius:25px;padding:17px 19px}
+ .hero-art-center{height:137px}
+ .hero-art-emblem{font-size:88px;letter-spacing:-12px;transform:translateX(-8px)}
+ .hero-art-orbit{height:140px;width:140px}
+ .orbit-b{height:102px;width:102px}
+ .hero-art-top,.hero-art-bottom{font-size:8px}
+ .hero-art-float{font-size:7px;padding:7px 9px}
+ .hero-art-float.f1{top:11px}
+ .hero-art-float.f2{bottom:11px}
+ .hero-art-bottom{padding-top:12px}
+ .stats{margin-top:-26px;max-width:calc(100% - 30px);border-radius:22px;grid-template-columns:repeat(2,minmax(0,1fr));padding:8px 10px}
+ .stats .stats-heading{grid-column:1/-1;padding:9px 10px 14px;border-right:0;border-bottom:1px solid #eeeae9;flex-direction:row;justify-content:space-between;align-items:center}
+ .stats-heading>span{font-size:8px}
+ .stats .stats-heading>strong{font-size:12px}
+ .stats>div{padding:15px 12px;min-height:69px;border-bottom:1px solid #eeeae9}
+ .stats>div:nth-last-child(-n+2){border-bottom:0}
+ .stats>div:nth-child(3){border-right:0}
+ .stats>div:nth-child(5){border-right:0}
+ .stats strong{font-size:24px}
+ .stats span{font-size:10px}
+ .content{padding-top:28px;padding-bottom:68px}
+ .memberbar{padding:16px 16px 16px 48px;margin-bottom:49px;font-size:11px;border-radius:17px}
+ .memberbar:before{left:13px}
+ .sectionhead{display:flex;align-items:flex-start;flex-direction:column;gap:21px;margin-bottom:24px}
+ .section-kicker{font-size:10px}
+ .sectionhead h2{font-size:clamp(33px,9.5vw,46px);line-height:1.12;letter-spacing:-1.8px;margin:12px 0}
+ .sectionhead p{font-size:13px;line-height:1.72}
+ .sectionhead>.btn{font-size:12px}
+ .filterbar{padding:12px;gap:11px;border-radius:19px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .filterbar label{min-width:0;font-size:10px}
+ .filterbar label:first-child{grid-column:1/-1}
+ .filterbar .btn{grid-column:1/-1;width:100%;font-size:11px;min-height:42px}
+ .filterbar input,.filterbar select{padding:12px 13px;font-size:12px;min-height:45px}
+ .card-grid{grid-template-columns:1fr;gap:13px}
+ .tile{padding:21px 20px;border-radius:21px}
+ .tile h3{font-size:20px}
+ .tile .price{font-size:24px}
+ .empty{min-height:215px;padding:30px 24px;font-size:12px}
+ .footer{border-radius:28px 28px 0 0}
+ .footer .wrap{padding-top:39px;padding-bottom:45px}
+ .dialog{width:calc(100vw - 22px);border-radius:24px}
+ .spin-dialog{width:calc(100vw - 20px);border-radius:25px}
+ .draw-topbar{padding:16px 18px}
+ .draw-body{padding:23px 21px 25px}
+ .draw-heading{font-size:clamp(37px,10vw,48px);letter-spacing:-1.6px}
+ .draw-heading em{letter-spacing:-.8px}
+ .draw-stage{border-radius:21px}
+ .draw-reel-name{font-size:clamp(30px,9vw,42px)}
+ .skeleton-card{min-height:246px;border-radius:20px}
+}
+@media(hover:none){.tile:hover{transform:none;box-shadow:0 9px 29px #24202707}.tile:hover:before{opacity:0}}
+@media(prefers-reduced-motion:reduce){
+ .tab-panel.panel-enter,.tile,.hero-art-emblem,.hero-art-star,.skeleton-line:before,.skeleton-block:before{animation:none!important}
+ .tile,.btn,.nav button,.hero-art{transition:none!important}
+}
+
+.demo-ribbon{position:relative;z-index:100;background:#f3e2d8;color:#55392f;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;text-align:center;padding:10px 16px;font:700 11px/1.5 var(--font-body);letter-spacing:.1px}
+.demo-ribbon button{background:white;border:1px solid #e1c5ba;border-radius:999px;padding:7px 12px;font-size:11px;color:#74443b;font-weight:800}
+.demo-ribbon button:hover{background:#fff8f4}
+.demo-ribbon strong{font-weight:800}
+.demo-preview-only{outline-offset:3px}
+@media(max-width:680px){.demo-ribbon{gap:7px;padding:10px}.demo-ribbon strong{width:100%}}
+</style><script>
+/* This preview cannot connect to the real website or write to production. */
+(function(){
+ const t=Date.now(), plus=(days)=>new Date(t+days*86400000).toISOString(), ago=(days)=>new Date(t-days*86400000).toISOString();
+ const sample={
+ '/api/hq/me':{user:{id:0,handle:'Vorschau',clan:'clan2',role:'member'}},
+ '/api/hq/market':{listings:[
+  {id:1,kind:'offer',title:'[Beispiel] Elytra',description:'Nur ein Designbeispiel – keine echte Anzeige. Zustand und Übergabe ingame besprechen.',price_millions:15,mc_contact:'BeispielMC',creator_handle:'DemoSpieler',created_at:ago(.5),is_owner:false},
+  {id:2,kind:'search',title:'[Beispiel] Netherite-Set gesucht',description:'Zeigt, wie ein Suchinserat später auf dem Marktplatz aussieht.',price_millions:0,mc_contact:'SampleUser',creator_handle:'Vorschau',created_at:ago(.1),is_owner:true}
+ ]},
+ '/api/hq/giveaways':{giveaways:[
+  {id:1,status:'open',title:'[Beispiel] Weekend Drop',description:'Designvorschau eines Giveaways. Echte Gewinne werden hier nicht verteilt.',prize_kind:'money',prize_amount:20,prize_detail:'',winner_count:3,entries:12,ends_at:plus(1.3),entered:false,fulfilled_at:null},
+  {id:2,status:'drawn',title:'[Beispiel] Community Giveaway',description:'Öffne die Gewinneransicht und teste die Namensanimation – nur Demo.',prize_kind:'item',prize_amount:1,prize_detail:'Elytra',winner_count:2,entries:8,ends_at:ago(1),entered:false,fulfilled_at:null,
+    winners:[{position:1,handle:'DemoSpieler'},{position:2,handle:'BeispielMC'}],participants:['DemoSpieler','BeispielMC','SampleUser','ClanMember_3','TestSpieler','ExampleUser']}
+ ]},
+ '/api/hq/events':{events:[
+  {id:1,status:'open',category:'FFA',title:'[Beispiel] Clan-Abend',description:'Das ist ein Designbeispiel, kein echter Termin.',starts_at:plus(2),ends_at:plus(2.2),participants:7,max_players:20,creator_handle:'ClanTeam',joined:false}
+ ]}
+ };
+ const nativeFetch=window.fetch;
+ window.fetch=async function(url,options){
+  const key=typeof url==='string'?url:String(url);
+  if(key.startsWith('/api/')){
+   if(options&&options.method&&options.method!=='GET')return new Response(JSON.stringify({error:'Nur Design-Vorschau: keine echten Accounts, Teilnahmen oder Aktionen.'}),{status:403,headers:{'Content-Type':'application/json'}});
+   const data=sample[key]||{error:'In der Design-Vorschau nicht verfügbar'};
+   return new Response(JSON.stringify(data),{status:sample[key]?200:404,headers:{'Content-Type':'application/json'}});
+  }
+  return nativeFetch.apply(this,arguments);
+ };
+})();
+</script><script>'use strict';
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const date=x=>new Date(x).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const state={user:null,market:[],events:[],giveaways:[],members:[],reports:[],tab:'market'};
+let toastTimeout,spinCancelled=false,spinActive=false,spinSkip=false;
+const staff=()=>['admin','moderator'].includes(state.user?.role);
+const member=()=>!!state.user?.clan;
+const labelClan={main:'👑 Main Clan',clan2:'⚔ Clan 2',clan3:'🛡 Clan 3',staff:'🛡 Clan-Team'};
+function toast(msg){clearTimeout(toastTimeout);$('#toast').textContent=msg;$('#toast').classList.add('show');toastTimeout=setTimeout(()=>$('#toast').classList.remove('show'),4200);}
+async function api(path,body){const opt={credentials:'same-origin',headers:{}};if(body!==undefined){opt.method='POST';opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body);}
+ const res=await fetch(path,opt);let data;try{data=await res.json();}catch{throw Error('Serverantwort ungültig.');}if(!res.ok)throw Error(data.error||`Fehler ${res.status}`);return data;}
+function formToObj(form){return Object.fromEntries(new FormData(form).entries());}
+function localISO(raw){const d=new Date(raw);if(!raw||!Number.isFinite(+d))throw Error('Bitte eine gültige Endzeit angeben.');return d.toISOString();}
+function localDefault(minutes){const d=new Date(Date.now()+minutes*60000);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);}
+function formError(err){$('#dialogError').hidden=false;$('#dialogError').textContent=err.message;}
+function modal(title,body,kicker='NOMERCY HQ'){$('#dialogTitle').textContent=title;$('#dialogKicker').textContent=kicker;$('#dialogBody').innerHTML=body;$('#dialogError').hidden=true;$('#dialog').showModal();}
+function closeModal(){$('#dialog').close();}
+const authHTML=(register=false)=>`<form class="form" id="authForm">
+ <label>Hub-Benutzername<input name="handle" autocomplete="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" required placeholder="Dein Hub-Name"></label>
+ <label>Passwort<input type="password" name="password" autocomplete="${register?'new-password':'current-password'}" minlength="${register?10:1}" maxlength="128" required placeholder="${register?'Mindestens 10 Zeichen':'Dein Passwort'}"></label>
+ <button class="btn primary full">${register?'Konto erstellen':'Anmelden'}</button>
+ <button class="textlink" type="button" id="switchAuth">${register?'Schon ein Konto? Anmelden':'Neu hier? Hub-Konto erstellen'}</button>
+ <small>Eigenes Hub-Passwort verwenden – niemals Minecraft- oder Microsoft-Zugangsdaten. Minecraft-Namen sind nicht verifiziert.</small></form>`;
+function showAuth(register=false){modal(register?'Konto erstellen':'Anmelden',authHTML(register),'HUB ACCOUNT');$('#switchAuth').onclick=()=>showAuth(!register);
+ $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
+function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.handle} ↗`:'Anmelden';
+ $$('.staff-action').forEach(x=>x.hidden=!staff());$('#moderationNav').hidden=!staff();$('#membersNav').hidden=!staff();
+ $('#memberManagement').hidden=u?.role!=='admin';$('#memberList').hidden=u?.role!=='admin';
+ $('#memberbar').textContent=!u?'Marktplatz öffentlich · Für Clan-Events und Giveaways brauchst du ein freigeschaltetes Hub-Konto.':
+ u.clan?`${u.handle} · ${labelClan[u.clan]||u.clan} · Clan-Zugang aktiv. Giveaway-Gewinne werden manuell im Spiel übergeben.`:
+ `${u.handle} · Hub-Konto aktiv. Die Clanleitung muss dich noch für Main, Clan 2 oder Clan 3 freischalten.`;
+ }
+async function refreshUser(){state.user=(await api('/api/hq/me')).user;syncHeader();}
+const skeletonCard=()=>`<article class="skeleton-card" aria-hidden="true">
+  <span class="skeleton-line sm"></span>
+  <span class="skeleton-line lg"></span>
+  <span class="skeleton-line md"></span>
+  <span class="skeleton-line short"></span>
+  <span class="skeleton-block"></span>
+ </article>`;
+function setSkeleton(selector,count=3){const list=$(selector);if(!list)return;list.setAttribute('aria-busy','true');list.innerHTML=Array.from({length:count},skeletonCard).join('');}
+function finishSkeleton(selector){$(selector)?.setAttribute('aria-busy','false');}
+function loadingError(selector,message){finishSkeleton(selector);$(selector).innerHTML=`<div class="empty"><strong>Gerade nicht erreichbar.</strong>${esc(message)}<p class="muted">Bitte versuche es gleich noch einmal.</p></div>`;}
+async function loadMarket(){setSkeleton('#marketList');try{const {listings}=await api('/api/hq/market');state.market=listings;$('#statMarket').textContent=listings.length;renderMarket();finishSkeleton('#marketList');}catch(e){loadingError('#marketList',e.message);throw e;}}
+function renderMarket(){const q=$('#marketSearch').value.trim().toLowerCase(),filter=$('#marketFilter').value;
+ const list=state.market.filter(x=>(filter==='all'||x.kind===filter)&&(!q||[x.title,x.description,x.mc_contact].join(' ').toLowerCase().includes(q)));
+ $('#marketList').innerHTML=list.length?list.map(x=>{
+ const pill=x.kind==='offer'?'VERKAUF':x.kind==='search'?'SUCHE':'SERVICE';
+ return `<article class="tile"><div class="tile-top"><span class="pill ${x.kind==='offer'?'red':''}">${pill}</span><span class="meta">#${x.id}</span></div><h3>${esc(x.title)}</h3><p class="desc">${esc(x.description)}</p><div class="price">${x.price_millions?esc(x.price_millions.toLocaleString('de-DE'))+' Mio.':'VB'}</div><div class="meta">Kontakt ingame: <b>${esc(x.mc_contact)}</b><br>Erstellt von ${esc(x.creator_handle)} · ${date(x.created_at)}</div><div class="actions">
+  <button class="btn outline" data-market="copy" data-id="${x.id}">Kontakt kopieren</button>${x.is_owner?`<button class="btn outline" data-market="close" data-id="${x.id}">Erledigt</button>`:''}${state.user&&!x.is_owner?`<button class="btn outline" data-market="report" data-id="${x.id}">Melden</button>`:''}</div></article>`;
+ }).join(''):'<div class="empty"><strong>Keine Anzeigen gefunden.</strong>Noch ist es hier ruhig. Erstelle die erste echte Anzeige für die HugoSMP-Community.</div>';
+}
+async function loadPrivate(){if(!member()){state.events=[];state.giveaways=[];$('#statGiveaways').textContent='–';$('#statEvents').textContent='–';renderPrivate();finishSkeleton('#giveawayList');finishSkeleton('#eventList');return;}
+ setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);
+ try{const [ev,ga]=await Promise.all([api('/api/hq/events'),api('/api/hq/giveaways')]);state.events=ev.events;state.giveaways=ga.giveaways;
+ $('#statGiveaways').textContent=ga.giveaways.length;$('#statEvents').textContent=ev.events.filter(e=>e.status==='open').length;renderPrivate();finishSkeleton('#giveawayList');finishSkeleton('#eventList');}
+ catch(e){loadingError('#giveawayList',e.message);loadingError('#eventList',e.message);throw e;}}
+function privateEmpty(feature){return `<div class="empty"><strong>🔒 ${feature} sind nur für Clanmitglieder.</strong>Dieser Bereich ist für freigeschaltete NoMercy-Mitglieder reserviert. Lass dich von der Clanleitung freischalten.<div class="empty-action"><button class="btn primary" data-action="login">${state.user?'Clan-Freischaltung anfragen':'Hub-Account anmelden'}</button></div></div>`;}
+function timeLeft(raw){const d=Date.parse(raw)-Date.now();if(d<=0)return 'Abgelaufen';const total=Math.floor(d/1000);const days=Math.floor(total/86400),hours=Math.floor(total%86400/3600),minutes=Math.floor(total%3600/60),secs=total%60;return (days?days+'T ':'')+String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0');}
+function giveawayPrize(g){return g.prize_kind==='money'?`${Number(g.prize_amount).toLocaleString('de-DE')} Mio. Ingame-Geld pro Gewinner`:`${Number(g.prize_amount).toLocaleString('de-DE')}× ${esc(g.prize_detail)} pro Gewinner`;}
+function renderPrivate(){if(!member()){$('#giveawayList').innerHTML=privateEmpty('Giveaways');$('#eventList').innerHTML=privateEmpty('Clan-Events');return;}
+ $('#giveawayList').innerHTML=state.giveaways.length?state.giveaways.map(g=>{
+ const open=g.status==='open'&&Date.parse(g.ends_at)>Date.now();const drawn=g.status==='drawn';
+ return `<article class="tile"><div class="tile-top"><span class="pill ${open?'red':'dark'}">${open?'● LIVE':drawn?'✓ AUSGELOST':g.status==='cancelled'?'ABGEBROCHEN':'ZIEHUNG'}</span><span class="meta">#${g.id}</span></div>
+ <h3>🎁 ${esc(g.title)}</h3><p class="desc">${esc(g.description)}</p><div class="price">${giveawayPrize(g)}</div><div class="meta">${g.winner_count} Gewinner · ${g.entries} Teilnahmen${g.fulfilled_at?' · ✓ Übergeben':''}<br>Ende: ${date(g.ends_at)} Uhr</div>
+ <div class="countdown" data-countdown="${esc(g.ends_at)}">${timeLeft(g.ends_at)}</div><div class="progress"><div></div></div><div class="actions">${open?`<button class="btn ${g.entered?'outline':'primary'}" data-giveaway="enter" data-id="${g.id}">${g.entered?'✓ Teilnahme zurückziehen':'Jetzt teilnehmen'}</button>`:drawn?`<button class="btn primary" data-giveaway="spin" data-id="${g.id}">Gewinner-Reveal ansehen ↗</button>`:`<button class="btn outline" disabled>${g.status==='cancelled'?'Abgebrochen':'Auslosung läuft'}</button>`}
+ ${staff()&&open?`<button class="btn outline" data-giveaway="cancel" data-id="${g.id}">Abbrechen</button>`:''}${staff()&&drawn&&!g.fulfilled_at?`<button class="btn outline" data-giveaway="fulfill" data-id="${g.id}">Als übergeben markieren</button>`:''}</div></article>`;
+ }).join(''):'<div class="empty"><strong>Es gibt noch keine Clan-Giveaways.</strong>Sobald die Clanleitung ein Giveaway startet, erscheint es hier.</div>';
+ $('#eventList').innerHTML=state.events.length?state.events.map(e=>{
+ const live=e.status==='open'&&Date.parse(e.ends_at)>Date.now();return `<article class="tile"><div class="tile-top"><span class="pill red">${esc(e.category)}</span><span class="meta">#${e.id}</span></div><h3>⚔ ${esc(e.title)}</h3><p class="desc">${esc(e.description)}</p><div class="meta">Start: ${date(e.starts_at)} Uhr<br>${e.participants}/${e.max_players} Mitglieder · von ${esc(e.creator_handle)}</div>
+ <div class="actions">${live?`<button class="btn ${e.joined?'outline':'primary'}" data-event="join" data-id="${e.id}">${e.joined?'✓ Abmelden':'Teilnehmen'}</button>`:'<button class="btn outline" disabled>Beendet</button>'}${staff()&&live?`<button class="btn outline" data-event="close" data-id="${e.id}">Schließen</button>`:''}</div></article>`;
+ }).join(''):'<div class="empty"><strong>Noch keine Clan-Events geplant.</strong>Noch keine Termine eingetragen.</div>';
+}
+async function setTab(tab){state.tab=tab;$$('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');});$$('.tab-panel').forEach(x=>{const visible=x.id===tab+'Panel';x.hidden=!visible;x.classList.remove('panel-enter');if(visible&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){void x.offsetWidth;x.classList.add('panel-enter');}});
+ const panel=$('#'+tab+'Panel');if(panel)document.title=`${tab==='market'?'Marktplatz':tab==='giveaways'?'Giveaways':tab==='events'?'Clan-Events':'Clan-Team'} · NoMercy Hub`;
+ if(location.hash!=='#'+tab)history.replaceState(null,'','#'+tab);
+ if(tab==='members'&&staff())await loadTeam();if(['events','giveaways'].includes(tab)&&member())await loadPrivate();}
+async function loadTeam(){if(!staff())return;
+ if(state.user.role==='admin'){
+  const {members}=await api('/api/hq/clan/members');state.members=members;
+  $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small></div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';
+ }
+ const data=await api('/api/hq/mod/market');state.reports=data.reports;
+ $('#marketReports').innerHTML=data.reports.filter(r=>r.status==='open').length?data.reports.filter(r=>r.status==='open').map(r=>`<div class="tile mod-report-card"><strong>${esc(r.listing_title)} · #${r.listing_id}</strong><p class="desc">${esc(r.reason)}</p><small>Von ${esc(r.reporter)} · ${date(r.created_at)}</small><label class="tag">Begründung (mind. 8 Zeichen)<textarea id="report-note-${r.id}" maxlength="400"></textarea></label><div class="actions"><button class="btn outline" data-review="dismissed" data-id="${r.id}">Verwerfen</button><button class="btn primary" data-review="reviewed" data-id="${r.id}">Prüfung speichern</button><button class="btn outline" data-hide-listing="${r.listing_id}" data-note-id="report-note-${r.id}">Inserat ausblenden</button></div></div>`).join(''):'<p class="muted">Keine offenen Markt-Meldungen.</p>';
+}
+function showListingForm(){if(!state.user)return showAuth();modal('Anzeige erstellen',`<form id="listingForm" class="form"><label>Art<select name="kind"><option value="offer">Ich verkaufe</option><option value="search">Ich suche</option><option value="service">Ich biete einen Service</option></select></label><label>Titel<input required name="title" minlength="5" maxlength="80" placeholder="z. B. Verkaufe Elytra"></label><label>Beschreibung<textarea required name="description" minlength="10" maxlength="1000" placeholder="Was genau wird angeboten oder gesucht?"></textarea></label><label>Preis in Millionen Ingame-Dollar (0 = VB)<input name="price_millions" type="number" min="0" max="1000000000" value="0" step="1" required></label><label>Kontakt-Minecraft-Name (nicht verifiziert)<input name="mc_contact" required minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" placeholder="Dein Minecraft-Name"></label><div class="banner">Nur Handel mit <b>HugoSMP-Ingame-Items / -Währung</b>. Kein Echtgeld. Identitäten und Angebote sind nicht verifiziert; sichere Übergabe vorher absprechen.</div><button class="btn primary full">Anzeige veröffentlichen</button></form>`,'MARKET / CREATE');
+ $('#listingForm').onsubmit=async e=>{e.preventDefault();try{await api('/api/hq/market',formToObj(e.currentTarget));closeModal();await loadMarket();toast('Anzeige veröffentlicht.');}catch(err){formError(err);}};}
+function showGiveawayForm(){if(!staff())return toast('Nur Clanleitung/Moderation kann Giveaways starten.');modal('Neues Giveaway',`<form id="giveawayForm" class="form"><label>Titel<input name="title" required minlength="5" maxlength="80" placeholder="Freitags-Drop"></label><label>Beschreibung<textarea name="description" required minlength="10" maxlength="700" placeholder="Wie können Mitglieder teilnehmen? Die Teilnahme erfolgt über den Button."></textarea></label><label>Gewinnart<select name="prize_kind" id="prizeKind"><option value="money">Ingame-Geld</option><option value="item">Minecraft-Item</option></select></label><label>Item / Bezeichnung<input name="prize_detail" id="prizeDetail" required minlength="2" maxlength="100" value="Ingame-Dollar"></label><label id="prizeAmountLabel">Gewinn pro Gewinner in Millionen<input name="prize_amount" type="number" required min="1" max="1000000000" value="20" step="1"></label><label>Anzahl Gewinner (1–20)<input name="winner_count" type="number" min="1" max="20" step="1" value="1" required></label><label>Ende am (lokale Zeit)<input type="datetime-local" name="ends_at" value="${localDefault(1440)}" required></label><div class="banner">Die Gewinner werden <b>automatisch und zufällig auf dem Server</b> nach Ablauf gewählt. Pro Hub-Konto höchstens ein Gewinn. Items/Geld müsst ihr danach selbst im Spiel übergeben.</div><button class="btn primary full">Giveaway starten</button></form>`,'CLAN / GIVEAWAYS');
+ $('#prizeKind').onchange=e=>{const item=e.target.value==='item';$('#prizeAmountLabel').firstChild.textContent=item?'Item-Menge pro Gewinner':'Gewinn pro Gewinner in Millionen';$('#prizeDetail').value=item?'':'Ingame-Dollar';};
+ $('#giveawayForm').onsubmit=async e=>{e.preventDefault();try{const b=formToObj(e.currentTarget);b.ends_at=localISO(b.ends_at);await api('/api/hq/giveaways',b);closeModal();await loadPrivate();toast('Giveaway ist gestartet!');}catch(err){formError(err);}};}
+function showEventForm(){if(!staff())return toast('Nur Clanleitung/Moderation kann Events erstellen.');modal('Clan-Event erstellen',`<form id="eventForm" class="form"><label>Event-Titel<input name="title" required minlength="5" maxlength="80" placeholder="NoMercy Clan-War"></label><label>Eventtyp<select name="category"><option>FFA</option><option>Baseraid</option><option>Turnier</option><option>Training</option><option>Community</option></select></label><label>Infos<textarea name="description" required minlength="10" maxlength="700" placeholder="Ort, Regeln, Ablauf"></textarea></label><label>Beginn<input type="datetime-local" name="starts_at" required value="${localDefault(120)}"></label><label>Dauer in Minuten<input name="duration_minutes" type="number" min="15" max="480" value="90" required></label><label>Max. Teilnehmer<input name="max_players" type="number" min="2" max="100" value="20" required></label><button class="btn primary full">Event eintragen</button></form>`,'CLAN / EVENTS');
+ $('#eventForm').onsubmit=async e=>{e.preventDefault();try{const b=formToObj(e.currentTarget);b.starts_at=localISO(b.starts_at);await api('/api/hq/events',b);closeModal();await loadPrivate();toast('Event erstellt.');}catch(err){formError(err);}};}
+function showReportForm(id){modal('Anzeige melden',`<form id="reportForm" class="form"><label>Warum ist dieses Inserat verdächtig?<textarea name="reason" required minlength="15" maxlength="500" placeholder="Bitte einen konkreten Grund angeben. Normale Handelspreise sind nicht automatisch Betrug."></textarea></label><button class="btn primary full">An Moderation melden</button></form>`,'MARKET / SAFETY');$('#reportForm').onsubmit=async e=>{e.preventDefault();try{await api(`/api/hq/market/${id}/report`,formToObj(e.currentTarget));closeModal();toast('Meldung an Moderation gesendet.');}catch(err){formError(err);}};}
+async function withAction(task){try{await task()}catch(e){toast(e.message)}}
+function askNote(question){const note=window.prompt(question);if(note===null)return null;if(note.trim().length<8)throw Error('Bitte eine Begründung mit mindestens 8 Zeichen eingeben.');return note.trim();}
+// The reveal is deliberately presentation-only. Drawn winners come from the server;
+// ticker values are never sent to the backend and cannot change the winner list.
+const drawSleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const drawCounter=(current,total)=>`${String(current).padStart(2,'0')} / ${String(total).padStart(2,'0')}`;
+function setReelName(name,prev,next){
+ $('#wheelName').textContent=name;
+ $('#drawPrev').textContent=prev??'–';
+ $('#drawNext').textContent=next??'–';
+}
+function renderWinner(w){
+ const card=document.createElement('div');card.className='winner-entry';
+ const rank=document.createElement('span');rank.className='winner-rank';rank.textContent=String(w.position).padStart(2,'0');
+ const handle=document.createElement('strong');handle.textContent=w.handle;
+ const badge=document.createElement('span');badge.className='winner-check';badge.textContent='✓ GEZOGEN';
+ card.append(rank,handle,badge);$('#spinWinners').append(card);
+}
+function startSpin(g){
+ if(!g||g.status!=='drawn')return;
+ spinCancelled=false;spinActive=false;spinSkip=false;
+ const winners=Array.isArray(g.winners)?g.winners:[];
+ const participants=Array.isArray(g.participants)&&g.participants.length?g.participants:winners.map(w=>w.handle);
+ const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const stage=$('#drawStage'),start=$('#spinStart'),skip=$('#spinSkip');
+ stage.classList.remove('rolling','revealed','draw-complete');
+ $('#spinWinners').replaceChildren();$('#drawWinnersHead').hidden=true;
+ $('#drawWinnerCount').textContent=`0 / ${winners.length}`;
+ $('#drawCounter').textContent=drawCounter(1,Math.max(1,winners.length));
+ $('#drawProgressBar').style.width='0%';
+ $('#drawPrize').textContent=`${g.title} · ${g.prize_kind==='money'?`${Number(g.prize_amount).toLocaleString('de-DE')} Mio. pro Gewinner`:`${Number(g.prize_amount).toLocaleString('de-DE')}× ${g.prize_detail} pro Gewinner`}`;
+ $('#drawStageHint').textContent='ERGEBNISSE BEREITS AUF DEM SERVER FESTGELEGT';
+ setReelName('READY','NOMERCY','GOOD LUCK');
+ $('#spinStatus').textContent=winners.length?`${winners.length} ${winners.length===1?'Gewinner wartet':'Gewinner warten'} auf die Enthüllung.`:'Keine gültigen Teilnahmen – keine Gewinner.';
+ start.hidden=false;start.disabled=!winners.length;start.textContent='Gewinner enthüllen ↗';skip.hidden=true;
+ $('#spinDialog').showModal();
+ start.focus({preventScroll:true});
+ skip.onclick=()=>{spinSkip=true;skip.hidden=true;};
+ start.onclick=async()=>{
+  if(spinActive||spinCancelled)return;
+  spinActive=true;start.hidden=true;skip.hidden=reduced||winners.length===0;
+  $('#drawWinnersHead').hidden=false;
+  for(const [index,w] of winners.entries()){
+   if(spinCancelled)break;
+   stage.classList.remove('revealed','draw-complete');
+   stage.classList.add('rolling');
+   $('#drawCounter').textContent=drawCounter(index+1,winners.length);
+   $('#drawStageHint').textContent=`GEWINNER ${index+1} / ${winners.length}`;
+   $('#spinStatus').textContent=`Gewinner ${index+1} von ${winners.length} wird enthüllt …`;
+   // Slow down the name ticker near the end rather than using a casino-style wheel.
+   if(!reduced&&!spinSkip){
+    const steps=index===0?28:18;
+    for(let step=0;step<steps&&!spinCancelled&&!spinSkip;step++){
+     const next=participants[Math.floor(Math.random()*participants.length)];
+     const prev=participants[Math.floor(Math.random()*participants.length)];
+     const after=participants[Math.floor(Math.random()*participants.length)];
+     setReelName(next,prev,after);
+     const name=$('#wheelName');name.classList.remove('draw-tick');void name.offsetWidth;name.classList.add('draw-tick');
+     await drawSleep(43+Math.round(140*(step/(steps-1))**2));
+    }
+   }
+   if(spinCancelled)break;
+   const name=$('#wheelName');name.classList.remove('draw-tick');
+   setReelName(w.handle,'','');
+   stage.classList.remove('rolling');
+   // Restart the reveal animation for every winner.
+   void stage.offsetWidth;
+   stage.classList.add('revealed');
+   $('#drawStageHint').textContent='GEWINNER BESTÄTIGT';
+   $('#spinStatus').textContent=`Gewinner #${index+1}: ${w.handle}`;
+   renderWinner(w);
+   $('#drawWinnerCount').textContent=`${index+1} / ${winners.length}`;
+   $('#drawProgressBar').style.width=`${Math.round((index+1)/winners.length*100)}%`;
+   if(!reduced&&!spinSkip)await drawSleep(550);
+  }
+  spinActive=false;
+  if(!spinCancelled){
+   stage.classList.add('draw-complete');skip.hidden=true;
+   $('#spinStatus').textContent=winners.length===1?'Der Gewinner steht fest!':`Alle ${winners.length} Gewinner stehen fest!`;
+   $('#drawStageHint').textContent='OFFIZIELLES ERGEBNIS · UNVERÄNDERLICH';
+  }
+ };
+}
+async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){await withAction(()=>setTab(tab.dataset.tab));return;}
+ const login=e.target.closest('[data-action="login"]');if(login){if(!state.user)showAuth();else toast('Bitte die Clanleitung um Freischaltung deines Hub-Namens.');return;}
+ const market=e.target.closest('[data-market]');if(market){const id=Number(market.dataset.id),x=state.market.find(m=>m.id===id);if(!x)return;
+  if(market.dataset.market==='copy'){try{await navigator.clipboard.writeText(`/msg ${x.mc_contact} Hallo, ich interessiere mich für ${x.title}.`);toast('Kontaktbefehl kopiert.')}catch{toast('Minecraft-Name: '+x.mc_contact)}}
+  if(market.dataset.market==='report')showReportForm(id);
+  if(market.dataset.market==='close')await withAction(async()=>{if(!confirm('Inserat als erledigt schließen?'))return;await api(`/api/hq/market/${id}/close`,{});await loadMarket();toast('Inserat geschlossen.');});return;
+ }
+ const giveaway=e.target.closest('[data-giveaway]');if(giveaway){const id=Number(giveaway.dataset.id),g=state.giveaways.find(x=>x.id===id);if(!g)return;
+  if(giveaway.dataset.giveaway==='spin')startSpin(g);
+  if(giveaway.dataset.giveaway==='enter')await withAction(async()=>{await api(`/api/hq/giveaways/${id}/enter`,{});await loadPrivate();toast('Teilnahme aktualisiert.');});
+  if(giveaway.dataset.giveaway==='fulfill')await withAction(async()=>{const note=askNote('Erst nach echter Übergabe: Welche Gewinne wurden im Spiel ausgehändigt?');if(!note)return;await api(`/api/hq/giveaways/${id}/fulfill`,{note});await loadPrivate();toast('Übergabe dokumentiert.');});
+  if(giveaway.dataset.giveaway==='cancel')await withAction(async()=>{const note=askNote('Warum soll dieses Giveaway abgebrochen werden?');if(!note)return;await api(`/api/hq/giveaways/${id}/cancel`,{note});await loadPrivate();toast('Giveaway abgebrochen.');});return;
+ }
+ const ev=e.target.closest('[data-event]');if(ev){const id=Number(ev.dataset.id);
+  if(ev.dataset.event==='join')await withAction(async()=>{await api(`/api/hq/events/${id}/join`,{});await loadPrivate();toast('Event-Teilnahme aktualisiert.');});
+  if(ev.dataset.event==='close')await withAction(async()=>{const note=askNote('Warum das Event schließen?');if(!note)return;await api(`/api/hq/events/${id}/status`,{status:'closed',note});await loadPrivate();toast('Event geschlossen.');});return;
+ }
+ const review=e.target.closest('[data-review]');if(review)await withAction(async()=>{const id=Number(review.dataset.id),note=$(`#report-note-${id}`).value;await api('/api/hq/mod/market/review',{id,status:review.dataset.review,note});await loadTeam();toast('Meldung bearbeitet.');});
+ const hide=e.target.closest('[data-hide-listing]');if(hide)await withAction(async()=>{const note=$('#'+hide.dataset.noteId).value;await api(`/api/hq/market/${hide.dataset.hideListing}/moderate`,{status:'hidden',note});await loadTeam();await loadMarket();toast('Inserat ausgeblendet.');});
+}
+async function init(){setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);$$('.nav [data-tab]').forEach(x=>x.setAttribute('aria-current',x.classList.contains('active')?'page':'false'));document.addEventListener('click',handleClick);$('#accountBtn').onclick=()=>{
+ if(!state.user)return showAuth();modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||'Noch keine Clan-Freischaltung')}</p><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
+ $('#logoutBtn').onclick=async()=>{await withAction(async()=>{await api('/api/logout',{});closeModal();await refreshUser();await loadPrivate();await loadMarket();await setTab('market');toast('Abgemeldet.');});};};
+ $('#dialogClose').onclick=closeModal;$('#spinClose').onclick=()=>$('#spinDialog').close();$('#spinDialog').addEventListener('close',()=>{spinCancelled=true;spinSkip=true;$('#drawStage').classList.remove('rolling');});
+ $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
+ $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
+ $('#memberForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{await api('/api/hq/clan/members',formToObj(e.currentTarget));e.currentTarget.reset();await loadTeam();toast('Clan-Zugriff aktualisiert.');});};
+ try{await Promise.all([refreshUser(),loadMarket()]);await loadPrivate();if(location.hash==='#giveaways'||location.hash==='#events')await setTab(location.hash.slice(1));}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
+ setInterval(async()=>{$$('[data-countdown]').forEach(x=>x.textContent=timeLeft(x.dataset.countdown));if(member()&&state.tab==='giveaways'&&state.giveaways.some(g=>g.status==='open'&&Date.parse(g.ends_at)<=Date.now()))await withAction(loadPrivate);},1000);
+}
+document.addEventListener('DOMContentLoaded',init);
+</script></head>
+<body><div class="demo-ribbon" role="note"><strong>● INTERAKTIVE DESIGN-VORSCHAU · keine echten Daten</strong><button type="button" id="demoSkeletonBtn">Ladeanimation ansehen ↗</button></div>
+<header class="topbar"><div class="wrap topinner"><a class="logo" href="/" aria-label="NoMercy Hub Startseite"><span class="mark">n<span>m</span></span><span><strong>NoMercy<span class="red">.</span></strong><small>CLAN HQ / HUGOSMP</small></span></a>
+<nav class="nav" aria-label="Hauptnavigation"><button data-tab="market" class="active"><span class="nav-glyph" aria-hidden="true">↗</span> Marktplatz</button><button data-tab="giveaways"><span class="nav-glyph" aria-hidden="true">✦</span> Giveaways</button><button data-tab="events"><span class="nav-glyph" aria-hidden="true">◈</span> Clan-Events</button><button data-tab="members" id="membersNav" hidden>Clan-Team</button></nav>
+<div class="head-actions"><a class="mod-link" href="/moderation.html" id="moderationNav" hidden>Moderation ↗</a><button class="btn ghost" id="accountBtn">Anmelden</button></div></div></header>
+<main>
+<section class="hero">
+<div class="wrap hero-grid">
+ <div class="hero-copy">
+  <div class="eyebrow"><span class="pulse"></span> Deine Community. Dein Space.</div>
+  <h1>Mehr als<br><span class="hero-thin">nur ein</span> <em>Clan.</em></h1>
+  <p>Ein Ort für die Crew. Entdecke echte Ingame-Deals, sichere dir einen Platz bei Clan-Events und sei beim nächsten Giveaway dabei.</p>
+  <div class="hero-actions"><button class="btn primary" data-tab="giveaways">Giveaways entdecken <span aria-hidden="true">↗</span></button><button class="btn outline" data-tab="market">Marktplatz ansehen</button></div>
+  <div class="hero-foot"><span class="hero-foot-dot" aria-hidden="true"></span> Für NoMercy & die HugoSMP-Community <span class="hero-foot-divider">/</span> Ingame only</div>
+ </div>
+ <div class="hero-art" aria-hidden="true">
+   <div class="hero-art-top"><span>THE NO MERCY CLUB</span><span class="hero-art-star">✳</span></div>
+   <div class="hero-art-center"><span class="hero-art-orbit orbit-a"></span><span class="hero-art-orbit orbit-b"></span><div class="hero-art-emblem">nm<span>.</span></div><span class="hero-art-float f1">PLAY TOGETHER</span><span class="hero-art-float f2">STAY LOYAL</span></div>
+   <div class="hero-art-bottom"><span>01 / 03 <b>BUILT FOR THE CREW</b></span><span class="hero-art-arrow">↗</span></div>
+ </div>
+</div></section>
+<section class="wrap stats" aria-label="Übersicht"><div class="stats-heading"><span>NO MERCY HUB</span><strong>Alles an einem Ort.</strong></div><div><strong id="statMarket">–</strong><span>Marktanzeigen</span></div><div><strong id="statGiveaways">–</strong><span>Clan-Giveaways</span></div><div><strong id="statEvents">–</strong><span>Clan-Events</span></div><div><strong>03</strong><span>Clan-Ebenen</span></div></section>
+<section class="wrap content"><div class="memberbar" id="memberbar" role="status">Marktplatz für alle · Clan-Events & Giveaways für freigeschaltete Mitglieder.</div>
+<section class="tab-panel" id="marketPanel"><div class="sectionhead"><div><span class="section-kicker">01 <i></i> HugoSMP Marktplatz</span><h2>Finden. Handeln. <span>Freuen.</span></h2><p>Von Netherite bis Elytra: entdecke Angebote der Community oder stelle selbst eine Anzeige ein. Nur Ingame-Handel.</p></div><button class="btn primary" id="newListingBtn">Anzeige erstellen <span aria-hidden="true">＋</span></button></div>
+<div class="filterbar"><label><span class="input-label">Suchbegriff</span> <input type="search" id="marketSearch" placeholder="Was suchst du? Elytra, Netherite …" autocomplete="off"></label><label><span class="input-label">Kategorie</span> <select id="marketFilter"><option value="all">Alle Anzeigen</option><option value="offer">Verkaufen</option><option value="search">Suchen</option><option value="service">Service</option></select></label><button class="btn outline slim" id="marketReload">Aktualisieren</button></div><div class="card-grid" id="marketList" aria-busy="true" aria-live="polite"></div></section>
+<section class="tab-panel" id="giveawaysPanel" hidden><div class="sectionhead"><div><span class="section-kicker">02 <i></i> Members only</span><h2>Ein bisschen Glück. <span>Für die Crew.</span></h2><p>Besondere Drops für NoMercy-Mitglieder. Einfach mitmachen, Countdown verfolgen und die Gewinner gemeinsam enthüllen.</p></div><button class="btn primary staff-action" id="newGiveawayBtn" hidden>+ Giveaway starten</button></div><div id="giveawayList" class="card-grid"></div></section>
+<section class="tab-panel" id="eventsPanel" hidden><div class="sectionhead"><div><span class="section-kicker">03 <i></i> Together we play</span><h2>Gemeinsam <span>mehr erleben.</span></h2><p>FFA, Training oder Clan-War: sei dabei, wenn die Crew zusammenkommt. Nur für freigeschaltete Mitglieder.</p></div><button class="btn primary staff-action" id="newEventBtn" hidden>+ Clan-Event</button></div><div id="eventList" class="card-grid"></div></section>
+<section class="tab-panel" id="membersPanel" hidden><div class="sectionhead"><div><span class="section-kicker">04 <i></i> Team Verwaltung</span><h2>Deine Crew. <span>Im Blick.</span></h2><p>Verwalte die Clan-Zugänge zu Main, Clan 2 und Clan 3 – sicher und übersichtlich.</p></div></div><div class="form-panel" id="memberManagement"><h3>Mitglied freischalten</h3><form id="memberForm" class="inline-form"><label>Hub-Benutzername<input name="handle" required placeholder="Spielername im Hub" minlength="3" maxlength="20"></label><label>Clan<select name="clan"><option value="clan3">Clan 3</option><option value="clan2">Clan 2</option><option value="main">Main Clan</option><option value="remove">Zugriff entziehen</option></select></label><button class="btn primary">Speichern</button></form></div><div class="card-grid" id="memberList"></div><div class="form-panel" id="marketModeration"><h3>Markt-Meldungen prüfen</h3><div id="marketReports"></div></div></section>
+</section></main>
+<footer class="footer"><div class="wrap"><div><strong>NoMercy<span class="red">.</span></strong><p>Unabhängiges Fanprojekt. Nicht offiziell von HugoSMP oder Mojang/Microsoft betrieben.</p></div><div><a href="/moderation.html">Moderation</a><a href="https://github.com/bygarfi3ld-source/nomercy-hub" target="_blank" rel="noopener noreferrer">Open Source ↗</a></div></div></footer>
+<dialog id="dialog" class="dialog"><div class="dialog-inner"><div class="dialog-top"><div><span class="section-kicker" id="dialogKicker">NOMERCY HQ</span><h2 id="dialogTitle">Anmelden</h2></div><button class="icon-close" id="dialogClose" aria-label="Schließen">✕</button></div><div id="dialogBody"></div><p class="dialog-error" id="dialogError" role="alert" hidden></p></div></dialog>
+<dialog id="spinDialog" class="dialog spin-dialog" aria-labelledby="drawTitle">
+  <div class="draw-shell">
+    <header class="draw-topbar">
+      <div class="draw-brand"><span class="draw-mark">nm<span>.</span></span><span class="draw-brand-label">NOMERCY <b>/</b> MEMBER DROPS</span></div>
+      <button class="draw-close" id="spinClose" aria-label="Gewinneransicht schließen">✕</button>
+    </header>
+    <div class="draw-body">
+      <div class="draw-eyebrow"><span class="draw-live-dot"></span> NOMERCY WINNER REVEAL <span class="draw-tag">SERVERSEITIG GEZOGEN</span></div>
+      <h2 class="draw-heading" id="drawTitle">Dein Moment. <em>Dein Gewinn.</em></h2>
+      <p class="draw-prize" id="drawPrize">NoMercy Giveaway</p>
+
+      <div class="draw-progress-line" aria-hidden="true"><span id="drawProgressBar"></span></div>
+      <div class="draw-round"><span>GEWINNER-REVEAL</span><strong id="drawCounter">01 <span>/</span> 01</strong></div>
+
+      <section class="draw-stage" id="drawStage" aria-label="Animierte Namensanzeige">
+        <span class="draw-corner draw-corner-tl" aria-hidden="true"></span>
+        <span class="draw-corner draw-corner-tr" aria-hidden="true"></span>
+        <span class="draw-corner draw-corner-bl" aria-hidden="true"></span>
+        <span class="draw-corner draw-corner-br" aria-hidden="true"></span>
+        <span class="draw-stage-top" aria-hidden="true">NO MERCY / REVEAL</span>
+        <div class="draw-reel" aria-live="off" aria-hidden="true">
+          <span class="draw-reel-ghost" id="drawPrev">–</span>
+          <span class="draw-reel-name" id="wheelName">READY</span>
+          <span class="draw-reel-ghost" id="drawNext">–</span>
+        </div>
+        <div class="draw-stage-bottom" aria-hidden="true"><span class="draw-stage-led"></span><span id="drawStageHint">RANDOM SELECTION / PREDETERMINED RESULT</span></div>
+        <div class="draw-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </section>
+
+      <div class="spin-status" id="spinStatus" role="status" aria-live="polite">Bereit zur Gewinnerenthüllung</div>
+      <div class="draw-winners-head" id="drawWinnersHead" hidden><span>GEWINNERLISTE</span><span id="drawWinnerCount">0 / 0</span></div>
+      <div id="spinWinners" class="spin-winners" aria-live="polite" aria-label="Bestätigte Gewinner"></div>
+      <div class="draw-actions">
+        <button class="btn primary full" id="spinStart">Gewinner enthüllen <span aria-hidden="true">↗</span></button>
+        <button class="draw-skip" id="spinSkip" hidden>Animation überspringen →</button>
+      </div>
+      <p class="spin-note">Das Ergebnis wird fair und endgültig auf dem Server gespeichert. Die Animation zeigt nur das gespeicherte Ergebnis und verändert keine Ziehung. Gewinne werden manuell ingame übergeben.</p>
+    </div>
+  </div>
+</dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+  document.querySelector('#demoSkeletonBtn').addEventListener('click',async()=>{
+    await setTab('market');
+    setSkeleton('#marketList',3);
+    document.querySelector('#marketPanel').scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(()=>{renderMarket();finishSkeleton('#marketList');},2200);
+  });
+</script></body></html>
