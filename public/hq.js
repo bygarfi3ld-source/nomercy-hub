@@ -39,6 +39,24 @@ function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.han
  `${u.handle} · Öffentliche Giveaways sind für dich offen. Für Clan-Events und private Giveaways muss die Leitung dich freischalten.`;
  }
 async function refreshUser(){state.user=(await api('/api/hq/me')).user;syncHeader();}
+// An admin can approve a member while their browser is open. Keep access state fresh
+// when returning to the tab or navigating; no page reload or logout is necessary.
+let accessRefreshInFlight=null;
+async function syncApprovedAccess(){
+ if(!state.user)return;
+ if(accessRefreshInFlight)return accessRefreshInFlight;
+ accessRefreshInFlight=(async()=>{
+  const oldClan=state.user?.clan,oldRole=state.user?.role;
+  await refreshUser();
+  if(oldClan!==state.user?.clan||oldRole!==state.user?.role){
+   await loadPrivate();
+   if(state.tab==='apply')await loadApplication();
+   if(state.tab==='bank')await loadBank();
+   if(!oldClan&&state.user?.clan)toast('✓ Dein Clan-Zugang ist jetzt freigeschaltet!');
+  }
+ })();
+ try{await accessRefreshInFlight}finally{accessRefreshInFlight=null;}
+}
 const skeletonCard=()=>`<article class="skeleton-card" aria-hidden="true">
   <span class="skeleton-line sm"></span>
   <span class="skeleton-line lg"></span>
@@ -172,6 +190,7 @@ async function setTab(tab,{historyMode='push',resetScroll=true}={}){
  if(historyMode==='push'&&location.hash!=='#'+tab)history.pushState(null,'','#'+tab);
  // Reset the viewport immediately; users should never remain above an invisible subpage.
  if(resetScroll)window.scrollTo({top:0,behavior:'instant'});
+ await syncApprovedAccess();
  if(tab==='members'&&staff())await loadTeam();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();
 }
 async function loadTeam(){if(!staff())return;
@@ -436,7 +455,10 @@ async function init(){
  showSection(initialTab); // Apply deep links before any network request, with no home-hero flash.
  const syncHistory=()=>{const next=Object.hasOwn(sectionNames,location.hash.slice(1))?location.hash.slice(1):'market';if(next!==state.tab)void withAction(()=>setTab(next,{historyMode:'none'}));};
  window.addEventListener('popstate',syncHistory);window.addEventListener('hashchange',syncHistory);
- setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);document.addEventListener('click',handleClick);$('#accountBtn').onclick=()=>{
+ window.addEventListener('focus',()=>{if(state.user)void withAction(syncApprovedAccess);});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user)void withAction(syncApprovedAccess);});
+ setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);document.addEventListener('click',handleClick);$('#accountBtn').onclick=async()=>{
+ if(state.user)await withAction(syncApprovedAccess);
  if(!state.user)return showAuth();modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||(state.user.role==='event_manager'?'Event-Team':'Noch keine Clan-Freischaltung'))}</p><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
  if(!member()){$('#logoutBtn').insertAdjacentHTML('beforebegin','<button class="btn primary" id="applyFromAccount">Bestehenden Clan-Zugang bestätigen lassen</button>');$('#applyFromAccount').onclick=()=>{closeModal();void showClanApplication('existing');};}
  $('#logoutBtn').onclick=async()=>{await withAction(async()=>{await api('/api/logout',{});closeModal();await refreshUser();await loadPrivate();await loadMarket();await setTab('market');toast('Abgemeldet.');});};};
