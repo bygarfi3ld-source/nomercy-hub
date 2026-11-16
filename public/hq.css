@@ -560,3 +560,15 @@ input,select,textarea{transition:border-color .2s ease,box-shadow .2s ease}
 @media(max-width:960px){.recruitment-grid{grid-template-columns:1fr}.recruitment-aside{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:690px){.recruitment-hero{grid-template-columns:1fr;border-radius:23px;gap:10px}.recruitment-art{display:none}.recruitment-hero h2{font-size:39px}.recruitment-aside{grid-template-columns:1fr}.recruitment-form-card,.recruitment-discord,.recruitment-steps{border-radius:20px}.apply-field-row{grid-template-columns:1fr}.hero-actions{flex-wrap:wrap}.hero-apply{flex-basis:100%}}
 @media(prefers-reduced-motion:reduce){.recruitment-art{animation:none!important}}
+
+
+/* V1.4 — Clear route identity: no identical landing hero on every subpage */
+.section-marker{min-height:66px;display:flex;align-items:center;gap:19px;background:linear-gradient(110deg,#221a20,#16171c 70%);color:#f9f6f8;border-bottom:1px solid #432c36;padding:13px max(24px,calc((100vw - 1132px)/2));position:relative;box-shadow:0 9px 26px #17141c12}
+.section-marker:before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#e85e6b}
+.section-marker-eyebrow{font-size:10px;letter-spacing:.17em;font-weight:800;color:#d8a6af}
+.section-marker-name{font-family:var(--font-display),system-ui,sans-serif;font-size:23px;letter-spacing:-.045em;line-height:1.2}
+.section-marker-identity{margin-left:auto;font-size:10px;letter-spacing:.17em;color:#8d8791;font-weight:700}
+.nav button.active{background:#b63f5040;box-shadow:inset 0 0 0 1px #ed718547;color:#fff}
+body[data-section]:not([data-section='market']) .content{padding-top:25px}
+body[data-section]:not([data-section='market']) .memberbar{margin-bottom:22px}
+@media(max-width:680px){.section-marker{padding:12px 16px;gap:12px;min-height:56px}.section-marker-name{font-size:20px}.section-marker-eyebrow{font-size:9px}.section-marker-identity{display:none}}

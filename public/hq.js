@@ -137,10 +137,31 @@ function renderPrivate(){
  <div class="actions">${live?`<button class="btn ${e.joined?'outline':'primary'}" data-event="join" data-id="${e.id}">${e.joined?'✓ Abmelden':'Teilnehmen'}</button>`:'<button class="btn outline" disabled>Beendet</button>'}${(staff()||(state.user?.role==='event_manager'&&e.is_owner))&&live?`<button class="btn outline" data-event="close" data-id="${e.id}">Schließen</button>`:''}</div></article>`;
  }).join(''):'<div class="empty"><strong>Noch keine Clan-Events geplant.</strong>Noch keine Termine eingetragen.</div>';
 }
-async function setTab(tab){state.tab=tab;$$('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');});$$('.tab-panel').forEach(x=>{const visible=x.id===tab+'Panel';x.hidden=!visible;x.classList.remove('panel-enter');if(visible&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){void x.offsetWidth;x.classList.add('panel-enter');}});
- const panel=$('#'+tab+'Panel');if(panel)document.title=`${tab==='market'?'Marktplatz':tab==='giveaways'?'Giveaways':tab==='events'?'Clan-Events':tab==='bank'?'Clanbank':tab==='apply'?'Bewerben':'Clan-Team'} · NoMercy Hub`;
- if(location.hash!=='#'+tab)history.replaceState(null,'','#'+tab);
- if(tab==='members'&&staff())await loadTeam();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();}
+const sectionNames={market:'Marktplatz',giveaways:'Giveaways',events:'Clan-Events',apply:'Bewerben',bank:'Clanbank',members:'Clan-Team'};
+// A real navigation state: the large home hero must not obscure inner pages.
+function showSection(tab){
+ if(!Object.hasOwn(sectionNames,tab))tab='market';
+ state.tab=tab;document.body.dataset.section=tab;
+ const home=tab==='market';
+ const hero=$('.hero'),stats=$('.stats');if(hero)hero.hidden=!home;if(stats)stats.hidden=!home;
+ const brandSubtitle=$('.logo small');if(brandSubtitle)brandSubtitle.textContent=`CLAN HQ / ${sectionNames[tab].toUpperCase()}`;
+ let marker=$('#sectionMarker');
+ if(!marker){marker=document.createElement('div');marker.id='sectionMarker';marker.className='section-marker';
+  marker.innerHTML='<span class="section-marker-eyebrow">DU BIST HIER</span><strong class="section-marker-name"></strong><span class="section-marker-identity">NO MERCY / CLAN HQ</span>';
+  $('.topbar').insertAdjacentElement('afterend',marker);}
+ marker.hidden=home;marker.querySelector('.section-marker-name').textContent=sectionNames[tab];
+ $$('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');});
+ $$('.tab-panel').forEach(x=>{const visible=x.id===tab+'Panel';x.hidden=!visible;x.classList.remove('panel-enter');if(visible&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){void x.offsetWidth;x.classList.add('panel-enter');}});
+ document.title=`${sectionNames[tab]} · NoMercy Clan HQ`;
+}
+async function setTab(tab,{historyMode='push',resetScroll=true}={}){
+ if(!Object.hasOwn(sectionNames,tab))tab='market';
+ showSection(tab);
+ if(historyMode==='push'&&location.hash!=='#'+tab)history.pushState(null,'','#'+tab);
+ // Reset the viewport immediately; users should never remain above an invisible subpage.
+ if(resetScroll)window.scrollTo({top:0,behavior:'instant'});
+ if(tab==='members'&&staff())await loadTeam();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();
+}
 async function loadTeam(){if(!staff())return;
  if(state.user.role==='admin'){
   const {members}=await api('/api/hq/clan/members');state.members=members;
@@ -385,7 +406,12 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
  const review=e.target.closest('[data-review]');if(review)await withAction(async()=>{const id=Number(review.dataset.id),note=$(`#report-note-${id}`).value;await api('/api/hq/mod/market/review',{id,status:review.dataset.review,note});await loadTeam();toast('Meldung bearbeitet.');});
  const hide=e.target.closest('[data-hide-listing]');if(hide)await withAction(async()=>{const note=$('#'+hide.dataset.noteId).value;await api(`/api/hq/market/${hide.dataset.hideListing}/moderate`,{status:'hidden',note});await loadTeam();await loadMarket();toast('Inserat ausgeblendet.');});
 }
-async function init(){setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);$$('.nav [data-tab]').forEach(x=>x.setAttribute('aria-current',x.classList.contains('active')?'page':'false'));document.addEventListener('click',handleClick);$('#accountBtn').onclick=()=>{
+async function init(){
+ const initialTab=Object.hasOwn(sectionNames,location.hash.slice(1))?location.hash.slice(1):'market';
+ showSection(initialTab); // Apply deep links before any network request, with no home-hero flash.
+ const syncHistory=()=>{const next=Object.hasOwn(sectionNames,location.hash.slice(1))?location.hash.slice(1):'market';if(next!==state.tab)void withAction(()=>setTab(next,{historyMode:'none'}));};
+ window.addEventListener('popstate',syncHistory);window.addEventListener('hashchange',syncHistory);
+ setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);document.addEventListener('click',handleClick);$('#accountBtn').onclick=()=>{
  if(!state.user)return showAuth();modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||(state.user.role==='event_manager'?'Event-Team':'Noch keine Clan-Freischaltung'))}</p><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
  if(!member()){$('#logoutBtn').insertAdjacentHTML('beforebegin','<button class="btn primary" id="applyFromAccount">Clan-Freigabe beantragen</button>');$('#applyFromAccount').onclick=()=>{closeModal();showClanApplication();};}
  $('#logoutBtn').onclick=async()=>{await withAction(async()=>{await api('/api/logout',{});closeModal();await refreshUser();await loadPrivate();await loadMarket();await setTab('market');toast('Abgemeldet.');});};};
@@ -398,7 +424,7 @@ async function init(){setSkeleton('#marketList',3);setSkeleton('#giveawayList',2
  $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
  $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
  $('#memberForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{await api('/api/hq/clan/members',formToObj(e.currentTarget));e.currentTarget.reset();await loadTeam();toast('Clan-Zugriff aktualisiert.');});};
- try{await Promise.all([refreshUser(),loadMarket(),loadCommunityLinks()]);await loadPrivate();if(['#giveaways','#events','#bank','#apply'].includes(location.hash))await setTab(location.hash.slice(1));}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
+ try{await Promise.all([refreshUser(),loadMarket(),loadCommunityLinks()]);await loadPrivate();if(initialTab!=='market')await setTab(initialTab,{historyMode:'none',resetScroll:false});}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
  setInterval(async()=>{$$('[data-countdown]').forEach(x=>x.textContent=timeLeft(x.dataset.countdown));if(state.tab==='giveaways'&&state.giveaways.some(g=>g.status==='open'&&Date.parse(g.ends_at)<=Date.now()))await withAction(loadPrivate);},1000);
 }
 document.addEventListener('DOMContentLoaded',init);
