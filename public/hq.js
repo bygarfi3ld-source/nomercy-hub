@@ -72,7 +72,15 @@ async function loadPrivate(){const started=performance.now();setSkeleton('#givea
   else{state.events=[];$('#statEvents').textContent='–';}
   await settleLoading(started,360);renderPrivate();finishSkeleton('#giveawayList');finishSkeleton('#eventList');}
  catch(e){loadingError('#giveawayList',e.message);loadingError('#eventList',e.message);throw e;}}
-async function showClanApplication(){await setTab('apply');}
+let applicationMode='application';
+async function showClanApplication(mode='application'){applicationMode=mode==='existing'?'existing':'application';await setTab('apply');}
+function renderApplicationMode(){
+ const existing=applicationMode==='existing';
+ $('#applyForm').hidden=existing;$('#accessForm').hidden=!existing;
+ $('#applyModeNew').classList.toggle('selected',!existing);$('#applyModeExisting').classList.toggle('selected',existing);
+ $('#applyModeNew').setAttribute('aria-pressed',String(!existing));$('#applyModeExisting').setAttribute('aria-pressed',String(existing));
+ $('#applyHeading').textContent=existing?'Du bist schon NoMercy-Mitglied?':'Neu bei NoMercy bewerben.';
+}
 async function loadCommunityLinks(){
  try{const links=await api('/api/community-links');
   const inv=$('#discordInviteLink'),ticket=$('#discordTicketLink');
@@ -84,43 +92,47 @@ async function loadCommunityLinks(){
  }catch{$('#discordLinksPending').textContent='Discord ist gerade nicht erreichbar. Bitte später erneut versuchen.';}
 }
 async function loadApplication(){
- const form=$('#applyForm'),gate=$('#applyGate'),status=$('#applyStatus');
- form.hidden=true;gate.hidden=!!state.user;status.hidden=true;
+ const form=$('#applyForm'),accessForm=$('#accessForm'),gate=$('#applyGate'),status=$('#applyStatus'),switcher=$('#applyModeSwitcher');
+ form.hidden=true;accessForm.hidden=true;switcher.hidden=true;gate.hidden=!!state.user;status.hidden=true;
  if(!state.user)return;
  const started=performance.now();status.hidden=false;
- status.innerHTML='<div class="apply-loading" aria-label="Bewerbungsstatus lädt"><span class="skeleton-line lg"></span><span class="skeleton-line md"></span><span class="skeleton-line short"></span></div>';
+ status.innerHTML='<div class="apply-loading" aria-label="Antragsstatus lädt"><span class="skeleton-line lg"></span><span class="skeleton-line md"></span><span class="skeleton-line short"></span></div>';
  try{
-  const data=await api('/api/hq/clan/requests');
+  const {request}=await api('/api/hq/clan/requests');
   await settleLoading(started,320);
-  const request=data.request;
   if(member()||request?.status==='approved'){
-   status.innerHTML='<div class="apply-info is-approved"><strong>✓ Du bist bereits freigeschaltet.</strong><p>Willkommen in der Crew! Die internen Clan-Events und die Clanbank sind für dich freigegeben, sofern deine Rolle den Zugang erlaubt.</p></div>';return;
+   status.innerHTML='<div class="apply-info is-approved"><strong>✓ Dein Hub-Clanzugang ist bereits freigeschaltet.</strong><p>Deinen bestätigten Clanrang siehst du oben in deinem Konto.</p></div>';return;
   }
   if(request?.status==='pending'){
-   status.innerHTML=`<div class="apply-info"><strong>⏳ Bewerbung wird geprüft.</strong><p>Dein Antrag für ${esc(labelClan[request.desired_clan]||request.desired_clan)} liegt der Clanleitung vor. Du erhältst den Zugang erst nach ihrer Entscheidung.</p></div>`;return;
+   const kind=request.request_type==='existing'?'Zugangsprüfung für bestehende Mitglieder':'Clan-Bewerbung';
+   status.innerHTML=`<div class="apply-info"><strong>⏳ ${kind} läuft.</strong><p>Dein Antrag für ${esc(labelClan[request.desired_clan]||request.desired_clan)} liegt der Clanleitung vor. Der Zugang wird erst nach manueller Prüfung vergeben.</p></div>`;return;
   }
   if(request?.status==='rejected'){
-   status.innerHTML=`<div class="apply-info is-rejected"><strong>Letzte Bewerbung abgelehnt.</strong><p>${esc(request.review_note||'Bitte kontaktiere die Clanleitung.')}</p><small>Eine erneute Bewerbung ist nach 24 Stunden möglich.</small></div>`;
+   status.innerHTML=`<div class="apply-info is-rejected"><strong>Letzter Antrag abgelehnt.</strong><p>${esc(request.review_note||'Bitte kontaktiere die Clanleitung.')}</p><small>Ein erneuter Antrag ist nach 24 Stunden möglich.</small></div>`;
   }else status.hidden=true;
-  form.hidden=false;
-  if(request?.mc_name)form.elements.mc_name.value=request.mc_name;
+  switcher.hidden=false;
+  if(request?.mc_name){form.elements.mc_name.value=request.mc_name;accessForm.elements.mc_name.value=request.mc_name;}
   if(['clan2','clan3'].includes(request?.desired_clan))form.elements.desired_clan.value=request.desired_clan;
-  if(request?.message&&request.status==='rejected'){
-   const raw=request.message;
-   const m=raw.match(/(?:^|\n)Motivation: ([\s\S]*)$/);
-   if(m)form.elements.message.value=m[1].slice(0,380);
-  }
- }catch(e){status.hidden=false;status.innerHTML=`<div class="apply-info is-rejected">Bewerbung konnte nicht geladen werden: ${esc(e.message)}</div>`;}
+  if(['main','clan2','clan3'].includes(request?.desired_clan))accessForm.elements.desired_clan.value=request.desired_clan;
+  renderApplicationMode();
+ }catch(e){status.hidden=false;status.innerHTML=`<div class="apply-info is-rejected">Antragsstatus konnte nicht geladen werden: ${esc(e.message)}</div>`;}
 }
 async function submitApplication(e){
  e.preventDefault();const form=e.currentTarget,fields=formToObj(form);
  const message=`Spielstil: ${fields.playstyle}\nOnline: ${fields.availability}\nDiscord (unverifiziert): ${fields.discord_name?.trim()||'Nicht angegeben'}\nMotivation: ${fields.message.trim()}`;
  if(!fields.playstyle||!fields.availability||message.length>600){toast('Bitte überprüfe deine Angaben (max. 600 Zeichen insgesamt).');return;}
  const button=$('#applySubmit');button.disabled=true;
- try{await api('/api/hq/clan/requests',{mc_name:fields.mc_name,desired_clan:fields.desired_clan,message});form.reset();await loadApplication();toast('Bewerbung abgeschickt! Die Clanleitung prüft sie.');}
+ try{await api('/api/hq/clan/requests',{mc_name:fields.mc_name,desired_clan:fields.desired_clan,message,request_type:'application'});form.reset();await loadApplication();toast('Bewerbung abgeschickt! Die Clanleitung prüft sie.');}
  catch(err){toast(err.message)}finally{button.disabled=false;}
 }
-function privateEmpty(feature){return `<div class="empty"><strong>🔒 ${feature} sind nur für Clanmitglieder.</strong>Dieser Bereich ist für freigeschaltete NoMercy-Mitglieder reserviert. Lass dich von der Clanleitung freischalten.<div class="empty-action"><button class="btn primary" data-action="login">${state.user?'Clan-Freischaltung anfragen':'Hub-Account anmelden'}</button></div></div>`;}
+async function submitExistingAccess(e){
+ e.preventDefault();const form=e.currentTarget,fields=formToObj(form);
+ const message=`Bereits Mitglied: ${fields.desired_clan}\nDiscord (unverifiziert): ${fields.discord_name?.trim()||'Nicht angegeben'}\nHinweise zur Prüfung: ${fields.message.trim()}`;
+ const button=$('#accessSubmit');button.disabled=true;
+ try{await api('/api/hq/clan/requests',{mc_name:fields.mc_name,desired_clan:fields.desired_clan,message,request_type:'existing'});form.reset();await loadApplication();toast('Zugangsprüfung angefragt! Die Clanleitung bestätigt deinen Rang.');}
+ catch(err){toast(err.message)}finally{button.disabled=false;}
+}
+function privateEmpty(feature){return `<div class="empty"><strong>🔒 ${feature} sind nur für Clanmitglieder.</strong>Dieser Bereich ist für freigeschaltete NoMercy-Mitglieder reserviert. Lass dich von der Clanleitung freischalten.<div class="empty-action"><button class="btn primary" data-action="login">${state.user?'Bestehenden Clan-Zugang beantragen':'Hub-Account anmelden'}</button></div></div>`;}
 function timeLeft(raw){const d=Date.parse(raw)-Date.now();if(d<=0)return 'Abgelaufen';const total=Math.floor(d/1000);const days=Math.floor(total/86400),hours=Math.floor(total%86400/3600),minutes=Math.floor(total%3600/60),secs=total%60;return (days?days+'T ':'')+String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0');}
 function giveawayPrize(g){return g.prize_kind==='money'?`${Number(g.prize_amount).toLocaleString('de-DE')} Mio. Ingame-Geld pro Gewinner`:`${Number(g.prize_amount).toLocaleString('de-DE')}× ${esc(g.prize_detail)} pro Gewinner`;}
 function renderPrivate(){
@@ -170,16 +182,17 @@ async function loadTeam(){if(!staff())return;
   const pending=requests.filter(r=>r.status==='pending'),history=requests.filter(r=>r.status!=='pending');
   $('#clanApplicationsSummary').textContent=`${pending.length} offen · ${history.length} bearbeitet · ${requests.length} angezeigt`;
   $('#clanApplications').innerHTML=pending.length?pending.map(r=>`<article class="tile clan-application">
-   <div class="tile-top"><span class="pill red">● OFFENE ANFRAGE</span><span class="meta">#${r.id}</span></div>
+   <div class="tile-top"><span class="pill red">${r.request_type==='existing'?'● ZUGANGSPRÜFUNG':'● NEUBEWERBUNG'}</span><span class="meta">#${r.id}</span></div>
    <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan]||r.desired_clan)}</p>
    <p class="desc">${esc(r.message)}</p><div class="meta">Eingereicht: ${date(r.created_at)}</div>
-   <label>Clanleitung entscheidet: <select id="join-clan-${r.id}"><option value="clan3">Clan 3</option><option value="clan2">Clan 2</option></select></label>
+   <label>Clanleitung entscheidet: <select id="join-clan-${r.id}">${r.request_type==='existing'?`<option value="main" ${r.desired_clan==='main'?'selected':''}>👑 Bestehenden Mainrang bestätigen</option>`:''}<option value="clan3" ${r.desired_clan==='clan3'?'selected':''}>Clan 3</option><option value="clan2" ${r.desired_clan==='clan2'?'selected':''}>Clan 2</option></select></label>
+    ${r.request_type==='existing'?'<p class="desc">⚠ Identität und echten Clanrang außerhalb des Hubs prüfen. Main nur nach ausdrücklicher Bestätigung.</p>':''}
    <label>Begründung <textarea id="join-note-${r.id}" maxlength="400" minlength="8" placeholder="Prüfung, Entscheidung und Trustfactor …"></textarea></label>
    <div class="actions"><button class="btn outline" data-clan-review="reject" data-id="${r.id}">Ablehnen</button><button class="btn primary" data-clan-review="approve" data-id="${r.id}">Freischalten</button></div>
    </article>`).join(''):`<div class="empty"><strong>Keine offenen Bewerbungen.</strong>${history.length?'Bereits bearbeitete Anträge findest du direkt darunter.':'Hier ist aktuell kein Bewerbungsantrag gespeichert. Bitte den Spieler die Hub-Bewerbung abschicken lassen. Discord-Tickets werden nicht automatisch übernommen.'}</div>`;
   const reviewedLabel={approved:'✓ GENEHMIGT',rejected:'✕ ABGELEHNT'};
   $('#clanApplicationsHistory').innerHTML=history.length?history.map(r=>`<article class="tile clan-application is-reviewed">
-   <div class="tile-top"><span class="pill ${r.status==='approved'?'approved':'rejected'}">${esc(reviewedLabel[r.status]||r.status)}</span><span class="meta">#${r.id}</span></div>
+   <div class="tile-top"><span class="pill ${r.status==='approved'?'approved':'rejected'}">${esc(reviewedLabel[r.status]||r.status)} · ${r.request_type==='existing'?'ZUGANG':'BEWERBUNG'}</span><span class="meta">#${r.id}</span></div>
    <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan]||r.desired_clan)}</p>
    <p class="desc">${esc(r.message)}</p>
    <div class="meta">Eingereicht: ${date(r.created_at)} · Bearbeitet: ${date(r.updated_at)}${r.reviewed_by_handle?' · von '+esc(r.reviewed_by_handle):''}</div>
@@ -387,7 +400,7 @@ function startSpin(g){
  };
 }
 async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){await withAction(()=>setTab(tab.dataset.tab));return;}
- const login=e.target.closest('[data-action="login"]');if(login){if(!state.user)showAuth();else showClanApplication();return;}
+ const login=e.target.closest('[data-action="login"]');if(login){if(!state.user)showAuth();else showClanApplication('existing');return;}
  const market=e.target.closest('[data-market]');if(market){const id=Number(market.dataset.id),x=state.market.find(m=>m.id===id);if(!x)return;
   if(market.dataset.market==='copy'){try{await navigator.clipboard.writeText(`/msg ${x.mc_contact} Hallo, ich interessiere mich für ${x.title}.`);toast('Kontaktbefehl kopiert.')}catch{toast('Minecraft-Name: '+x.mc_contact)}}
   if(market.dataset.market==='report')showReportForm(id);
@@ -410,7 +423,9 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
  const clanReview=e.target.closest('[data-clan-review]');if(clanReview){
   await withAction(async()=>{const id=Number(clanReview.dataset.id),decision=clanReview.dataset.clanReview;
    const note=$(`#join-note-${id}`).value,clan=$(`#join-clan-${id}`).value;
-   await api(`/api/hq/clan/requests/${id}/review`,{decision,clan,note});await loadTeam();toast(decision==='approve'?'Clan-Mitglied freigeschaltet.':'Anfrage abgelehnt.');});return;
+   const verifiedExisting=decision==='approve'&&clan==='main';
+    if(verifiedExisting&&!confirm('Hast du persönlich geprüft, dass dieses Hub-Konto einem bestehenden Mainclan-Mitglied gehört? Ohne Prüfung NICHT bestätigen.'))return;
+    await api(`/api/hq/clan/requests/${id}/review`,{decision,clan,note,verified_existing:verifiedExisting});await loadTeam();toast(decision==='approve'?'Clan-Mitglied freigeschaltet.':'Anfrage abgelehnt.');});return;
  }
  const bankDecision=e.target.closest('[data-bank-decision]');if(bankDecision){showBankDecisionForm(Number(bankDecision.dataset.id),bankDecision.dataset.bankDecision);return;}
  const review=e.target.closest('[data-review]');if(review)await withAction(async()=>{const id=Number(review.dataset.id),note=$(`#report-note-${id}`).value;await api('/api/hq/mod/market/review',{id,status:review.dataset.review,note});await loadTeam();toast('Meldung bearbeitet.');});
@@ -423,13 +438,16 @@ async function init(){
  window.addEventListener('popstate',syncHistory);window.addEventListener('hashchange',syncHistory);
  setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);document.addEventListener('click',handleClick);$('#accountBtn').onclick=()=>{
  if(!state.user)return showAuth();modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||(state.user.role==='event_manager'?'Event-Team':'Noch keine Clan-Freischaltung'))}</p><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
- if(!member()){$('#logoutBtn').insertAdjacentHTML('beforebegin','<button class="btn primary" id="applyFromAccount">Clan-Freigabe beantragen</button>');$('#applyFromAccount').onclick=()=>{closeModal();showClanApplication();};}
+ if(!member()){$('#logoutBtn').insertAdjacentHTML('beforebegin','<button class="btn primary" id="applyFromAccount">Bestehenden Clan-Zugang bestätigen lassen</button>');$('#applyFromAccount').onclick=()=>{closeModal();void showClanApplication('existing');};}
  $('#logoutBtn').onclick=async()=>{await withAction(async()=>{await api('/api/logout',{});closeModal();await refreshUser();await loadPrivate();await loadMarket();await setTab('market');toast('Abgemeldet.');});};};
  $('#dialogClose').onclick=closeModal;$('#spinClose').onclick=()=>$('#spinDialog').close();
  $('#drawSoundToggle').onclick=()=>{revealSoundEnabled=!revealSoundEnabled;syncRevealAudioButton();if(revealSoundEnabled)audioForReveal();};
  $('#spinDialog').addEventListener('close',()=>{spinCancelled=true;spinSkip=true;$('#drawStage').classList.remove('rolling');revealAudio?.suspend().catch(()=>{});});
- $('#bankGateLogin').onclick=()=>!state.user?showAuth():showClanApplication();
+ $('#bankGateLogin').onclick=()=>!state.user?showAuth():showClanApplication('existing');
  $('#applyLoginBtn').onclick=()=>showAuth();$('#applyForm').onsubmit=submitApplication;
+ $('#accessForm').onsubmit=submitExistingAccess;
+ $('#applyModeNew').onclick=()=>{applicationMode='application';renderApplicationMode();};
+ $('#applyModeExisting').onclick=()=>{applicationMode='existing';renderApplicationMode();};
  $('#bankRequestBtn').onclick=showBankRequestForm;$('#bankTransactionBtn').onclick=showBankTransactionForm;
  $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
  $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
