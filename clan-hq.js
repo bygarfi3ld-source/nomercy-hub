@@ -74,6 +74,10 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
  if(!db.prepare('PRAGMA table_info(clan_giveaways)').all().some(c=>c.name==='visibility')){
   db.exec("ALTER TABLE clan_giveaways ADD COLUMN visibility TEXT NOT NULL DEFAULT 'clan' CHECK(visibility IN ('clan','public'))");
  }
+ // Additive migration: existing rows retain their original status and data.
+ if(!db.prepare('PRAGMA table_info(clan_join_requests)').all().some(c=>c.name==='request_type')){
+  db.exec("ALTER TABLE clan_join_requests ADD COLUMN request_type TEXT NOT NULL DEFAULT 'application' CHECK(request_type IN ('application','existing'))");
+ }
  const clean=(v,max=160)=>typeof v==='string'?v.trim().slice(0,max):'';
  const fail=(message)=>{throw errors(400,message)};
  const runAtomic=(fn)=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
@@ -154,13 +158,13 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
     const u=requireUser(req);
     if(u.role==='admin'){
      const requests=db.prepare(`SELECT r.id,r.user_id,u.handle,r.mc_name,r.desired_clan,r.message,
-       r.status,r.created_at,r.updated_at,r.review_note,a.handle AS reviewed_by_handle
+       r.request_type,r.status,r.created_at,r.updated_at,r.review_note,a.handle AS reviewed_by_handle
        FROM clan_join_requests r JOIN users u ON u.id=r.user_id
        LEFT JOIN users a ON a.id=r.reviewed_by
        ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END,r.updated_at DESC LIMIT 200`).all();
      return json(res,200,{requests});
     }
-    const mine=db.prepare(`SELECT id,mc_name,desired_clan,message,status,created_at,updated_at,review_note
+    const mine=db.prepare(`SELECT id,mc_name,desired_clan,message,request_type,status,created_at,updated_at,review_note
       FROM clan_join_requests WHERE user_id=?`).get(u.id)||null;
     return json(res,200,{request:mine});
    }
@@ -168,7 +172,10 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    const u=requireUser(req);checkRate(req,'hq-clan-application',4,86400000);
    if(membership(u))throw errors(409,'Du bist bereits für den Clan freigeschaltet.');
    const b=await readBody(req),mc=clean(b.mc_name,16),desired=b.desired_clan,message=clean(b.message,600);
-   if(!/^[A-Za-z0-9_]{3,16}$/.test(mc)||!['clan2','clan3'].includes(desired)||message.length<20)
+   const requestType=b.request_type===undefined?'application':b.request_type;
+   if(!['application','existing'].includes(requestType))fail('Unbekannte Antragsart.');
+   const allowed=requestType==='existing'?['main','clan2','clan3']:['clan2','clan3'];
+   if(!/^[A-Za-z0-9_]{3,16}$/.test(mc)||!allowed.includes(desired)||message.length<20)
     fail('Minecraft-Name, Wunschclan und Erklärung mit mindestens 20 Zeichen angeben.');
    const previous=db.prepare('SELECT id,status,updated_at FROM clan_join_requests WHERE user_id=?').get(u.id);
    if(previous?.status==='pending')throw errors(409,'Deine Anfrage wird bereits geprüft.');
@@ -176,11 +183,11 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    if(previous && Date.now()-Date.parse(previous.updated_at)<24*3600000)
     throw errors(429,'Nach einer Ablehnung kannst du nach 24 Stunden erneut anfragen.');
    runAtomic(()=>{
-    if(previous)db.prepare(`UPDATE clan_join_requests SET mc_name=?,desired_clan=?,message=?,status='pending',
-      updated_at=?,reviewed_by=NULL,review_note='' WHERE user_id=?`).run(mc,desired,message,now(),u.id);
-    else db.prepare(`INSERT INTO clan_join_requests(user_id,mc_name,desired_clan,message,status,created_at,updated_at)
-      VALUES(?,?,?,?,'pending',?,?)`).run(u.id,mc,desired,message,now(),now());
-    audit(u,'clan_application',u.id,`Anfrage für ${desired}; Minecraft-Name nicht verifiziert`);
+    if(previous)db.prepare(`UPDATE clan_join_requests SET mc_name=?,desired_clan=?,message=?,request_type=?,status='pending',
+      updated_at=?,reviewed_by=NULL,review_note='' WHERE user_id=?`).run(mc,desired,message,requestType,now(),u.id);
+    else db.prepare(`INSERT INTO clan_join_requests(user_id,mc_name,desired_clan,message,request_type,status,created_at,updated_at)
+      VALUES(?,?,?,?,?,'pending',?,?)`).run(u.id,mc,desired,message,requestType,now(),now());
+    audit(u,requestType==='existing'?'clan_existing_access_request':'clan_application',u.id,`${requestType}: ${desired}; Minecraft-Name nicht verifiziert`);
    });
    return json(res,201,{ok:true,notice:'Anfrage eingegangen. Nur die Clanleitung kann dich freischalten.'});
   }
@@ -188,18 +195,21 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   if(applicationReview){
    postOnly(m);const admin=requireStaff(req,true);checkRate(req,'hq-clan-review',35,3600000);
    const id=safeId(applicationReview[1]),b=await readBody(req),decision=b.decision,clan=b.clan,note=clean(b.note,400);
-   if(!['approve','reject'].includes(decision)||note.length<8||(decision==='approve'&&!['clan2','clan3'].includes(clan)))
+   if(!['approve','reject'].includes(decision)||note.length<8||(decision==='approve'&&!['main','clan2','clan3'].includes(clan)))
     fail('Entscheidung, Clan und Begründung (mindestens 8 Zeichen) angeben.');
    runAtomic(()=>{
     const application=db.prepare('SELECT * FROM clan_join_requests WHERE id=?').get(id);
     if(!application||application.status!=='pending')throw errors(409,'Diese Anfrage ist nicht mehr offen.');
+    // Main is never granted to new applicants, only with explicit admin verification.
+    if(decision==='approve'&&clan==='main'&&(application.request_type!=='existing'||b.verified_existing!==true))
+     throw errors(409,'Main-Zugang nur nach manueller Prüfung einer bestehenden Main-Mitgliedschaft.');
     const status=decision==='approve'?'approved':'rejected';
     db.prepare(`UPDATE clan_join_requests SET status=?,updated_at=?,reviewed_by=?,review_note=? WHERE id=?`)
      .run(status,now(),admin.id,note,id);
     if(decision==='approve')db.prepare(`INSERT INTO clan_memberships(user_id,clan,approved_by,approved_at) VALUES(?,?,?,?)
      ON CONFLICT(user_id) DO UPDATE SET clan=excluded.clan,approved_by=excluded.approved_by,approved_at=excluded.approved_at`)
      .run(application.user_id,clan,admin.id,now());
-    audit(admin,'clan_application_review',application.user_id,`Antrag #${id}: ${status}${decision==='approve'?` → ${clan}`:''}; ${note}`);
+    audit(admin,decision==='approve'&&clan==='main'?'clan_existing_main_verified':'clan_application_review',application.user_id,`Antrag #${id} [${application.request_type}]: ${status}${decision==='approve'?` → ${clan}`:''}; ${note}`);
    });
    return json(res,200,{ok:true});
   }
