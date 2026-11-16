@@ -78,12 +78,14 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
  const fail=(message)=>{throw errors(400,message)};
  const runAtomic=(fn)=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
  const isStaff=(u)=>!!u&&['admin','moderator'].includes(u.role);
+ const canManageEvents=(u)=>!!u&&['admin','moderator','event_manager'].includes(u.role);
  const membership=(u)=>{
   if(!u)return null;
   const m=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(u.id);
   return m?.clan|| (isStaff(u)?'staff':null);
  };
- const requireMember=(req)=>{const u=requireUser(req);if(!membership(u))throw errors(403,'Nur freigeschaltete NoMercy-Mitglieder können hier teilnehmen.');return u;};
+ const canSeeEvents=(u)=>!!u&&(!!membership(u)||u.role==='event_manager');
+ const requireEventAccess=(req)=>{const u=requireUser(req);if(!canSeeEvents(u))throw errors(403,'Clan-Events sind nur für freigeschaltete Mitglieder und das Event-Team.');return u;};
  const audit=(u,action,id,details)=>db.prepare('INSERT INTO clan_hq_audit(actor_id,action,object_id,details,created_at) VALUES(?,?,?,?,?)').run(u.id,action,id,clean(details,400),now());
  function drawOne(id) {
   return runAtomic(()=>{
@@ -129,7 +131,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
  };
  const eventView=(e,u)=>{
   const {creator_id,...v}=e;
-  return {...v,joined:!!db.prepare('SELECT 1 FROM clan_event_joins WHERE event_id=? AND user_id=?').get(e.id,u.id),
+  return {...v,is_owner:!!u&&u.id===creator_id,joined:!!db.prepare('SELECT 1 FROM clan_event_joins WHERE event_id=? AND user_id=?').get(e.id,u.id),
    participants:db.prepare('SELECT COUNT(*) AS n FROM clan_event_joins WHERE event_id=?').get(e.id).n};
  };
  const listingView=(e,u)=>{const {creator_id,...v}=e;return {...v,is_owner:!!u&&u.id===creator_id}};
@@ -166,7 +168,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    const u=requireUser(req);checkRate(req,'hq-clan-application',4,86400000);
    if(membership(u))throw errors(409,'Du bist bereits für den Clan freigeschaltet.');
    const b=await readBody(req),mc=clean(b.mc_name,16),desired=b.desired_clan,message=clean(b.message,600);
-   if(!/^[A-Za-z0-9_]{3,16}$/.test(mc)||!['main','clan2','clan3'].includes(desired)||message.length<20)
+   if(!/^[A-Za-z0-9_]{3,16}$/.test(mc)||!['clan2','clan3'].includes(desired)||message.length<20)
     fail('Minecraft-Name, Wunschclan und Erklärung mit mindestens 20 Zeichen angeben.');
    const previous=db.prepare('SELECT id,status,updated_at FROM clan_join_requests WHERE user_id=?').get(u.id);
    if(previous?.status==='pending')throw errors(409,'Deine Anfrage wird bereits geprüft.');
@@ -186,7 +188,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   if(applicationReview){
    postOnly(m);const admin=requireStaff(req,true);checkRate(req,'hq-clan-review',35,3600000);
    const id=safeId(applicationReview[1]),b=await readBody(req),decision=b.decision,clan=b.clan,note=clean(b.note,400);
-   if(!['approve','reject'].includes(decision)||note.length<8||(decision==='approve'&&!['main','clan2','clan3'].includes(clan)))
+   if(!['approve','reject'].includes(decision)||note.length<8||(decision==='approve'&&!['clan2','clan3'].includes(clan)))
     fail('Entscheidung, Clan und Begründung (mindestens 8 Zeichen) angeben.');
    runAtomic(()=>{
     const application=db.prepare('SELECT * FROM clan_join_requests WHERE id=?').get(id);
@@ -213,35 +215,40 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    const target=db.prepare('SELECT id FROM users WHERE handle=?').get(handle);
    if(!target)throw errors(404,'Hub-Konto nicht gefunden.');
    runAtomic(()=>{
+    const current=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(target.id)?.clan||null;
+    // Main is earned, never granted through a first-time application or direct assignment.
+    // Admins may promote Clan 3 → Clan 2 → Main. Existing Main members are unchanged.
+    if(clan==='main'&&current!=='clan2'&&current!=='main')
+     throw errors(409,'Main Clan ist nur durch Beförderung aus Clan 2 erreichbar. Erst im Clan hocharbeiten.');
     if(clan==='remove')db.prepare('DELETE FROM clan_memberships WHERE user_id=?').run(target.id);
     else db.prepare(`INSERT INTO clan_memberships(user_id,clan,approved_by,approved_at) VALUES(?,?,?,?)
      ON CONFLICT(user_id) DO UPDATE SET clan=excluded.clan,approved_by=excluded.approved_by,approved_at=excluded.approved_at`).run(target.id,clan,staff.id,now());
     if(clan!=='remove')db.prepare(`UPDATE clan_join_requests SET status='approved',updated_at=?,reviewed_by=?,review_note=?
       WHERE user_id=? AND status='pending'`).run(now(),staff.id,'Manuell durch Clanleitung freigeschaltet.',target.id);
-    audit(staff,'clan_member',target.id,`${handle} -> ${clan}`);
+    audit(staff,(current==='clan3'&&clan==='clan2')||(current==='clan2'&&clan==='main')?'clan_member_promotion':'clan_member',target.id,`${handle}: ${current||'ohne Clan'} -> ${clan}`);
    });
    return json(res,200,{ok:true});
   }
   if(p==='/api/hq/events'){
-   const u=requireMember(req);
+   const u=requireEventAccess(req);
    if(m==='GET'){
     const rows=db.prepare(`SELECT e.*,u.handle AS creator_handle FROM clan_events e JOIN users u ON u.id=e.creator_id
      WHERE e.status!='hidden' ORDER BY e.starts_at ASC LIMIT 100`).all();
     return json(res,200,{events:rows.map(e=>eventView(e,u))});
    }
-   postOnly(m);const staff=requireStaff(req);checkRate(req,'hq-event-create',10,3600000);
+   postOnly(m);if(!canManageEvents(u))throw errors(403,'Nur das Event-Team und die Clanleitung können Events erstellen.');checkRate(req,'hq-event-create',10,3600000);
    const b=await readBody(req),title=clean(b.title,80),description=clean(b.description,700),category=b.category,
     max=Number(b.max_players),start=future(b.starts_at,60000,30*86400000),duration=Number(b.duration_minutes);
    if(title.length<5||description.length<10||!['FFA','Baseraid','Turnier','Training','Community'].includes(category)||
     !Number.isSafeInteger(max)||max<2||max>100||!Number.isSafeInteger(duration)||duration<15||duration>480)fail('Eventdaten ungültig.');
    const id=Number(db.prepare(`INSERT INTO clan_events(creator_id,title,category,description,starts_at,ends_at,max_players,created_at)
-    VALUES(?,?,?,?,?,?,?,?)`).run(staff.id,title,category,description,start,new Date(Date.parse(start)+duration*60000).toISOString(),max,now()).lastInsertRowid);
+    VALUES(?,?,?,?,?,?,?,?)`).run(u.id,title,category,description,start,new Date(Date.parse(start)+duration*60000).toISOString(),max,now()).lastInsertRowid);
    return json(res,201,{id});
   }
   const ev=p.match(/^\/api\/hq\/events\/(\d+)\/(join|status)$/);
   if(ev){postOnly(m);const id=safeId(ev[1]);
    if(ev[2]==='join'){
-    const u=requireMember(req);checkRate(req,'hq-event-join',30);
+    const u=requireEventAccess(req);checkRate(req,'hq-event-join',30);
     const outcome=runAtomic(()=>{
      const e=db.prepare('SELECT * FROM clan_events WHERE id=?').get(id);
      if(!e||e.status!=='open'||e.ends_at<=now())throw errors(404,'Event nicht verfügbar.');
@@ -252,11 +259,13 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
      db.prepare('INSERT INTO clan_event_joins(event_id,user_id,created_at) VALUES(?,?,?)').run(id,u.id,now());return true;
     });return json(res,200,{joined:outcome});
    }
-   const staff=requireStaff(req);const b=await readBody(req);
+   const staff=requireUser(req);if(!canManageEvents(staff))throw errors(403,'Keine Event-Verwaltungsrechte.');
+   const b=await readBody(req);
    if(!['closed','hidden','open'].includes(b.status))fail('Ungültiger Status.');
    const note=clean(b.note,400);if(note.length<8)fail('Begründung mit mindestens 8 Zeichen angeben.');
-   const e=db.prepare('SELECT status FROM clan_events WHERE id=?').get(id);
+   const e=db.prepare('SELECT status,creator_id FROM clan_events WHERE id=?').get(id);
    if(!e)throw errors(404,'Event nicht gefunden');
+   if(staff.role==='event_manager'&&(e.creator_id!==staff.id||b.status!=='closed'))throw errors(403,'Event-Team darf nur eigene Events schließen.');
    runAtomic(()=>{db.prepare('UPDATE clan_events SET status=? WHERE id=?').run(b.status,id);audit(staff,'clan_event_status',id,`${e.status} -> ${b.status}: ${note}`)});
    return json(res,200,{ok:true});
   }

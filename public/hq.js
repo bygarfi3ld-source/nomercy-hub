@@ -6,7 +6,9 @@ const date=x=>new Date(x).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',
 const state={user:null,market:[],events:[],giveaways:[],members:[],reports:[],bank:null,tab:'market'};
 let toastTimeout,spinCancelled=false,spinActive=false,spinSkip=false;
 const staff=()=>['admin','moderator'].includes(state.user?.role);
+const eventCreator=()=>staff()||state.user?.role==='event_manager';
 const member=()=>!!state.user?.clan;
+const eventMember=()=>member()||state.user?.role==='event_manager';
 const bankEligible=()=>state.user?.role==='admin'||['main','clan2','clan3'].includes(state.user?.clan);
 const money=x=>(Number(x)/1000).toLocaleString('de-DE',{maximumFractionDigits:3});
 const labelClan={main:'👑 Main Clan',clan2:'⚔ Clan 2',clan3:'🛡 Clan 3',staff:'🛡 Clan-Team'};
@@ -26,13 +28,14 @@ const authHTML=(register=false)=>`<form class="form" id="authForm">
  <button class="textlink" type="button" id="switchAuth">${register?'Schon ein Konto? Anmelden':'Neu hier? Hub-Konto erstellen'}</button>
  <small>Eigenes Hub-Passwort verwenden – niemals Minecraft- oder Microsoft-Zugangsdaten. Minecraft-Namen sind nicht verifiziert.</small></form>`;
 function showAuth(register=false){modal(register?'Konto erstellen':'Anmelden',authHTML(register),'HUB ACCOUNT');$('#switchAuth').onclick=()=>showAuth(!register);
- $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
+ $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();if(state.tab==='apply')await loadApplication();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
 function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.handle} ↗`:'Anmelden';
- $$('.staff-action').forEach(x=>x.hidden=!staff());$('#moderationNav').hidden=!staff();$('#membersNav').hidden=!staff();
+ $$('.staff-action').forEach(x=>x.hidden=!staff());$$('.event-action').forEach(x=>x.hidden=!eventCreator());$('#moderationNav').hidden=!staff();$('#membersNav').hidden=!staff();
  $('#memberManagement').hidden=u?.role!=='admin';$('#memberList').hidden=u?.role!=='admin';
  $('#bankTransactionBtn').hidden=u?.role!=='admin';$('#bankRequestBtn').hidden=!bankEligible();
  $('#memberbar').textContent=!u?'Marktplatz für alle · Öffentliche Giveaways mit Hub-Konto · Clan-Events nur mit Freigabe.':
  u.clan?`${u.handle} · ${labelClan[u.clan]||u.clan} · Clan-Zugang aktiv. Gewinne werden manuell ingame übergeben.`:
+ u.role==='event_manager'?`${u.handle} · Event-Team aktiv. Du kannst Clan-Events planen und eigene Events schließen, aber keine Giveaways oder Clanbank verwalten.`:
  `${u.handle} · Öffentliche Giveaways sind für dich offen. Für Clan-Events und private Giveaways muss die Leitung dich freischalten.`;
  }
 async function refreshUser(){state.user=(await api('/api/hq/me')).user;syncHeader();}
@@ -45,8 +48,16 @@ const skeletonCard=()=>`<article class="skeleton-card" aria-hidden="true">
  </article>`;
 function setSkeleton(selector,count=3){const list=$(selector);if(!list)return;list.setAttribute('aria-busy','true');list.innerHTML=Array.from({length:count},skeletonCard).join('');}
 function finishSkeleton(selector){$(selector)?.setAttribute('aria-busy','false');}
+// Fast API responses still get a brief visual loading state so transitions are legible.
+// Reduced-motion or background tabs never wait artificially.
+const prefersReducedMotion=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+async function settleLoading(started,minimum=340){
+ if(prefersReducedMotion()||document.visibilityState==='hidden')return;
+ const remaining=minimum-(performance.now()-started);
+ if(remaining>0)await new Promise(resolve=>setTimeout(resolve,remaining));
+}
 function loadingError(selector,message){finishSkeleton(selector);$(selector).innerHTML=`<div class="empty"><strong>Gerade nicht erreichbar.</strong>${esc(message)}<p class="muted">Bitte versuche es gleich noch einmal.</p></div>`;}
-async function loadMarket(){setSkeleton('#marketList');try{const {listings}=await api('/api/hq/market');state.market=listings;$('#statMarket').textContent=listings.length;renderMarket();finishSkeleton('#marketList');}catch(e){loadingError('#marketList',e.message);throw e;}}
+async function loadMarket(){const started=performance.now();setSkeleton('#marketList');try{const {listings}=await api('/api/hq/market');await settleLoading(started,390);state.market=listings;$('#statMarket').textContent=listings.length;renderMarket();finishSkeleton('#marketList');}catch(e){loadingError('#marketList',e.message);throw e;}}
 function renderMarket(){const q=$('#marketSearch').value.trim().toLowerCase(),filter=$('#marketFilter').value;
  const list=state.market.filter(x=>(filter==='all'||x.kind===filter)&&(!q||[x.title,x.description,x.mc_contact].join(' ').toLowerCase().includes(q)));
  $('#marketList').innerHTML=list.length?list.map(x=>{
@@ -55,28 +66,59 @@ function renderMarket(){const q=$('#marketSearch').value.trim().toLowerCase(),fi
   <button class="btn outline" data-market="copy" data-id="${x.id}">Kontakt kopieren</button>${x.is_owner?`<button class="btn outline" data-market="close" data-id="${x.id}">Erledigt</button>`:''}${state.user&&!x.is_owner?`<button class="btn outline" data-market="report" data-id="${x.id}">Melden</button>`:''}</div></article>`;
  }).join(''):'<div class="empty"><strong>Keine Anzeigen gefunden.</strong>Noch ist es hier ruhig. Erstelle die erste echte Anzeige für die HugoSMP-Community.</div>';
 }
-async function loadPrivate(){setSkeleton('#giveawayList',2);if(member())setSkeleton('#eventList',2);
+async function loadPrivate(){const started=performance.now();setSkeleton('#giveawayList',2);if(eventMember())setSkeleton('#eventList',2);
  try{const ga=await api('/api/hq/giveaways');state.giveaways=ga.giveaways;$('#statGiveaways').textContent=ga.giveaways.length;
-  if(member()){const ev=await api('/api/hq/events');state.events=ev.events;$('#statEvents').textContent=ev.events.filter(e=>e.status==='open').length;}
+  if(eventMember()){const ev=await api('/api/hq/events');state.events=ev.events;$('#statEvents').textContent=ev.events.filter(e=>e.status==='open').length;}
   else{state.events=[];$('#statEvents').textContent='–';}
-  renderPrivate();finishSkeleton('#giveawayList');finishSkeleton('#eventList');}
+  await settleLoading(started,360);renderPrivate();finishSkeleton('#giveawayList');finishSkeleton('#eventList');}
  catch(e){loadingError('#giveawayList',e.message);loadingError('#eventList',e.message);throw e;}}
-async function showClanApplication(){
- if(!state.user)return showAuth();
- if(member())return toast('Deine Clan-Mitgliedschaft ist bereits bestätigt.');
+async function showClanApplication(){await setTab('apply');}
+async function loadCommunityLinks(){
+ try{const links=await api('/api/community-links');
+  const inv=$('#discordInviteLink'),ticket=$('#discordTicketLink');
+  inv.hidden=!links.invite_url;ticket.hidden=!links.ticket_url;
+  if(links.invite_url)inv.href=links.invite_url;
+  if(links.ticket_url)ticket.href=links.ticket_url;
+  $('#discordLinksPending').hidden=!!(links.invite_url||links.ticket_url);
+  $('#discordLinksHint').hidden=!(links.invite_url||links.ticket_url);
+ }catch{$('#discordLinksPending').textContent='Discord ist gerade nicht erreichbar. Bitte später erneut versuchen.';}
+}
+async function loadApplication(){
+ const form=$('#applyForm'),gate=$('#applyGate'),status=$('#applyStatus');
+ form.hidden=true;gate.hidden=!!state.user;status.hidden=true;
+ if(!state.user)return;
+ const started=performance.now();status.hidden=false;
+ status.innerHTML='<div class="apply-loading" aria-label="Bewerbungsstatus lädt"><span class="skeleton-line lg"></span><span class="skeleton-line md"></span><span class="skeleton-line short"></span></div>';
  try{
-  const {request}=await api('/api/hq/clan/requests');
-  if(request?.status==='pending')return modal('Deine Anfrage wird geprüft',`<div class="form"><p>Deine Anfrage für ${esc(labelClan[request.desired_clan])} ist eingegangen. Die Clanleitung entscheidet persönlich.</p><div class="banner">Minecraft-Name ist nicht verifiziert; bis zur Freigabe bleiben Clan-Events, private Giveaways und die Clanbank gesperrt.</div></div>`,'NO MERCY / CLAN-ZUGANG');
-  if(request?.status==='approved')return toast('Dein Antrag wurde schon angenommen. Bitte Seite aktualisieren.');
-  modal('Clan-Freigabe beantragen',`<form id="joinRequestForm" class="form">
-   ${request?.status==='rejected'?`<div class="banner">Die vorige Anfrage wurde abgelehnt: ${esc(request.review_note)}. Eine neue Anfrage ist nach 24 Stunden möglich.</div>`:''}
-   <label>Minecraft-Name (noch nicht verifiziert)<input name="mc_name" required minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" placeholder="Dein Minecraft-Name" value="${esc(request?.mc_name||'')}"></label>
-   <label>Wunschclan<select name="desired_clan"><option value="clan3">Clan 3</option><option value="clan2">Clan 2</option><option value="main">Main Clan (nur mit Trustfactor)</option></select></label>
-   <label>Warum möchtest du zu NoMercy?<textarea name="message" required minlength="20" maxlength="600" placeholder="Erzähl uns von dir und deinem bisherigen Kontakt mit dem Clan …">${esc(request?.message||'')}</textarea></label>
-   <div class="banner">Deine Angaben beweisen keine Minecraft-Identität. Erst die persönliche Prüfung durch die Clanleitung schaltet interne Bereiche frei.</div>
-   <button class="btn primary full">Beitrittsanfrage absenden</button></form>`,'NO MERCY / BEWERBUNG');
-  $('#joinRequestForm').onsubmit=async e=>{e.preventDefault();try{await api('/api/hq/clan/requests',formToObj(e.currentTarget));closeModal();toast('Anfrage gesendet – die Leitung prüft sie.');}catch(err){formError(err);}};
- }catch(err){toast(err.message);}
+  const data=await api('/api/hq/clan/requests');
+  await settleLoading(started,320);
+  const request=data.request;
+  if(member()||request?.status==='approved'){
+   status.innerHTML='<div class="apply-info is-approved"><strong>✓ Du bist bereits freigeschaltet.</strong><p>Willkommen in der Crew! Die internen Clan-Events und die Clanbank sind für dich freigegeben, sofern deine Rolle den Zugang erlaubt.</p></div>';return;
+  }
+  if(request?.status==='pending'){
+   status.innerHTML=`<div class="apply-info"><strong>⏳ Bewerbung wird geprüft.</strong><p>Dein Antrag für ${esc(labelClan[request.desired_clan]||request.desired_clan)} liegt der Clanleitung vor. Du erhältst den Zugang erst nach ihrer Entscheidung.</p></div>`;return;
+  }
+  if(request?.status==='rejected'){
+   status.innerHTML=`<div class="apply-info is-rejected"><strong>Letzte Bewerbung abgelehnt.</strong><p>${esc(request.review_note||'Bitte kontaktiere die Clanleitung.')}</p><small>Eine erneute Bewerbung ist nach 24 Stunden möglich.</small></div>`;
+  }else status.hidden=true;
+  form.hidden=false;
+  if(request?.mc_name)form.elements.mc_name.value=request.mc_name;
+  if(['clan2','clan3'].includes(request?.desired_clan))form.elements.desired_clan.value=request.desired_clan;
+  if(request?.message&&request.status==='rejected'){
+   const raw=request.message;
+   const m=raw.match(/(?:^|\n)Motivation: ([\s\S]*)$/);
+   if(m)form.elements.message.value=m[1].slice(0,380);
+  }
+ }catch(e){status.hidden=false;status.innerHTML=`<div class="apply-info is-rejected">Bewerbung konnte nicht geladen werden: ${esc(e.message)}</div>`;}
+}
+async function submitApplication(e){
+ e.preventDefault();const form=e.currentTarget,fields=formToObj(form);
+ const message=`Spielstil: ${fields.playstyle}\nOnline: ${fields.availability}\nDiscord (unverifiziert): ${fields.discord_name?.trim()||'Nicht angegeben'}\nMotivation: ${fields.message.trim()}`;
+ if(!fields.playstyle||!fields.availability||message.length>600){toast('Bitte überprüfe deine Angaben (max. 600 Zeichen insgesamt).');return;}
+ const button=$('#applySubmit');button.disabled=true;
+ try{await api('/api/hq/clan/requests',{mc_name:fields.mc_name,desired_clan:fields.desired_clan,message});form.reset();await loadApplication();toast('Bewerbung abgeschickt! Die Clanleitung prüft sie.');}
+ catch(err){toast(err.message)}finally{button.disabled=false;}
 }
 function privateEmpty(feature){return `<div class="empty"><strong>🔒 ${feature} sind nur für Clanmitglieder.</strong>Dieser Bereich ist für freigeschaltete NoMercy-Mitglieder reserviert. Lass dich von der Clanleitung freischalten.<div class="empty-action"><button class="btn primary" data-action="login">${state.user?'Clan-Freischaltung anfragen':'Hub-Account anmelden'}</button></div></div>`;}
 function timeLeft(raw){const d=Date.parse(raw)-Date.now();if(d<=0)return 'Abgelaufen';const total=Math.floor(d/1000);const days=Math.floor(total/86400),hours=Math.floor(total%86400/3600),minutes=Math.floor(total%3600/60),secs=total%60;return (days?days+'T ':'')+String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0');}
@@ -89,16 +131,16 @@ function renderPrivate(){
  <div class="countdown" data-countdown="${esc(g.ends_at)}">${timeLeft(g.ends_at)}</div><div class="progress"><div></div></div><div class="actions">${open?`<button class="btn ${g.entered?'outline':'primary'}" data-giveaway="enter" data-id="${g.id}">${g.entered?'✓ Teilnahme zurückziehen':!state.user?'Anmelden & teilnehmen':'Jetzt teilnehmen'}</button>`:drawn?`<button class="btn primary" data-giveaway="spin" data-id="${g.id}">Gewinner-Reveal ansehen ↗</button>`:`<button class="btn outline" disabled>${g.status==='cancelled'?'Abgebrochen':'Auslosung läuft'}</button>`}
  ${staff()&&open?`<button class="btn outline" data-giveaway="cancel" data-id="${g.id}">Abbrechen</button>`:''}${staff()&&drawn&&!g.fulfilled_at?`<button class="btn outline" data-giveaway="fulfill" data-id="${g.id}">Als übergeben markieren</button>`:''}</div></article>`;
  }).join(''):`<div class="empty"><strong>Noch keine öffentlichen Giveaways.</strong>${member()?'Auch private Clan-Drops sind momentan nicht geplant.':'Private Clan-Drops sind nur für freigeschaltete Mitglieder sichtbar.'}</div>`;
- if(!member()){$('#eventList').innerHTML=privateEmpty('Clan-Events');return;}
+ if(!eventMember()){$('#eventList').innerHTML=privateEmpty('Clan-Events');return;}
  $('#eventList').innerHTML=state.events.length?state.events.map(e=>{
  const live=e.status==='open'&&Date.parse(e.ends_at)>Date.now();return `<article class="tile"><div class="tile-top"><span class="pill red">${esc(e.category)}</span><span class="meta">#${e.id}</span></div><h3>⚔ ${esc(e.title)}</h3><p class="desc">${esc(e.description)}</p><div class="meta">Start: ${date(e.starts_at)} Uhr<br>${e.participants}/${e.max_players} Mitglieder · von ${esc(e.creator_handle)}</div>
- <div class="actions">${live?`<button class="btn ${e.joined?'outline':'primary'}" data-event="join" data-id="${e.id}">${e.joined?'✓ Abmelden':'Teilnehmen'}</button>`:'<button class="btn outline" disabled>Beendet</button>'}${staff()&&live?`<button class="btn outline" data-event="close" data-id="${e.id}">Schließen</button>`:''}</div></article>`;
+ <div class="actions">${live?`<button class="btn ${e.joined?'outline':'primary'}" data-event="join" data-id="${e.id}">${e.joined?'✓ Abmelden':'Teilnehmen'}</button>`:'<button class="btn outline" disabled>Beendet</button>'}${(staff()||(state.user?.role==='event_manager'&&e.is_owner))&&live?`<button class="btn outline" data-event="close" data-id="${e.id}">Schließen</button>`:''}</div></article>`;
  }).join(''):'<div class="empty"><strong>Noch keine Clan-Events geplant.</strong>Noch keine Termine eingetragen.</div>';
 }
 async function setTab(tab){state.tab=tab;$$('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');});$$('.tab-panel').forEach(x=>{const visible=x.id===tab+'Panel';x.hidden=!visible;x.classList.remove('panel-enter');if(visible&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){void x.offsetWidth;x.classList.add('panel-enter');}});
- const panel=$('#'+tab+'Panel');if(panel)document.title=`${tab==='market'?'Marktplatz':tab==='giveaways'?'Giveaways':tab==='events'?'Clan-Events':tab==='bank'?'Clanbank':'Clan-Team'} · NoMercy Hub`;
+ const panel=$('#'+tab+'Panel');if(panel)document.title=`${tab==='market'?'Marktplatz':tab==='giveaways'?'Giveaways':tab==='events'?'Clan-Events':tab==='bank'?'Clanbank':tab==='apply'?'Bewerben':'Clan-Team'} · NoMercy Hub`;
  if(location.hash!=='#'+tab)history.replaceState(null,'','#'+tab);
- if(tab==='members'&&staff())await loadTeam();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();}
+ if(tab==='members'&&staff())await loadTeam();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();}
 async function loadTeam(){if(!staff())return;
  if(state.user.role==='admin'){
   const {members}=await api('/api/hq/clan/members');state.members=members;
@@ -108,11 +150,11 @@ async function loadTeam(){if(!staff())return;
     <div class="tile-top"><span class="pill red">● OFFENE ANFRAGE</span><span class="meta">#${r.id}</span></div>
     <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan])}</p>
     <p class="desc">${esc(r.message)}</p><div class="meta">Eingereicht: ${date(r.created_at)}</div>
-    <label>Clanleitung entscheidet: <select id="join-clan-${r.id}"><option value="clan3">Clan 3</option><option value="clan2">Clan 2</option><option value="main">Main Clan</option></select></label>
+    <label>Clanleitung entscheidet: <select id="join-clan-${r.id}"><option value="clan3">Clan 3</option><option value="clan2">Clan 2</option></select></label>
     <label>Begründung <textarea id="join-note-${r.id}" maxlength="400" minlength="8" placeholder="Prüfung, Entscheidung und Trustfactor …"></textarea></label>
     <div class="actions"><button class="btn outline" data-clan-review="reject" data-id="${r.id}">Ablehnen</button><button class="btn primary" data-clan-review="approve" data-id="${r.id}">Freischalten</button></div>
     </article>`).join(''):'<div class="empty"><strong>Keine offenen Anfragen.</strong>Neue Bewerbungen erscheinen hier.</div>';
-  $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small></div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';
+  $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small>${u.clan==='clan3'?`<button type="button" class="btn outline" data-clan-promote="clan2" data-handle="${esc(u.handle)}">⬆ Zu Clan 2 befördern</button>`:u.clan==='clan2'?`<button type="button" class="btn primary" data-clan-promote="main" data-handle="${esc(u.handle)}">👑 In den Mainclan befördern</button>`:''}</div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';
  }
  const data=await api('/api/hq/mod/market');state.reports=data.reports;
  $('#marketReports').innerHTML=data.reports.filter(r=>r.status==='open').length?data.reports.filter(r=>r.status==='open').map(r=>`<div class="tile mod-report-card"><strong>${esc(r.listing_title)} · #${r.listing_id}</strong><p class="desc">${esc(r.reason)}</p><small>Von ${esc(r.reporter)} · ${date(r.created_at)}</small><label class="tag">Begründung (mind. 8 Zeichen)<textarea id="report-note-${r.id}" maxlength="400"></textarea></label><div class="actions"><button class="btn outline" data-review="dismissed" data-id="${r.id}">Verwerfen</button><button class="btn primary" data-review="reviewed" data-id="${r.id}">Prüfung speichern</button><button class="btn outline" data-hide-listing="${r.listing_id}" data-note-id="report-note-${r.id}">Inserat ausblenden</button></div></div>`).join(''):'<p class="muted">Keine offenen Markt-Meldungen.</p>';
@@ -124,8 +166,8 @@ function bankLocked(){
 async function loadBank(){
  if(!bankEligible()){state.bank=null;bankLocked();return;}
  $('#bankGate').hidden=true;$('#bankContent').hidden=false;
- setSkeleton('#bankRequestList',2);setSkeleton('#bankTransactionList',2);
- try{state.bank=await api('/api/hq/bank');renderBank();}catch(e){
+ const started=performance.now();setSkeleton('#bankRequestList',2);setSkeleton('#bankTransactionList',2);
+ try{state.bank=await api('/api/hq/bank');await settleLoading(started,320);renderBank();}catch(e){
   if([401,403].includes(e.status)){bankLocked();return;}
   loadingError('#bankRequestList',e.message);loadingError('#bankTransactionList',e.message);throw e;
  }
@@ -166,7 +208,7 @@ function showListingForm(){if(!state.user)return showAuth();modal('Anzeige erste
 function showGiveawayForm(){if(!staff())return toast('Nur Clanleitung/Moderation kann Giveaways starten.');modal('Neues Giveaway',`<form id="giveawayForm" class="form"><label>Titel<input name="title" required minlength="5" maxlength="80" placeholder="Freitags-Drop"></label><label>Beschreibung<textarea name="description" required minlength="10" maxlength="700" placeholder="Wie können Mitglieder teilnehmen? Die Teilnahme erfolgt über den Button."></textarea></label><label>Teilnahmeberechtigung<select name="visibility" id="giveawayVisibility"><option value="clan">🔒 Privat – nur freigeschaltete NoMercy-Mitglieder</option><option value="public">🌍 Öffentlich – alle mit Hub-Konto</option></select></label><label>Gewinnart<select name="prize_kind" id="prizeKind"><option value="money">Ingame-Geld</option><option value="item">Minecraft-Item</option></select></label><label>Item / Bezeichnung<input name="prize_detail" id="prizeDetail" required minlength="2" maxlength="100" value="Ingame-Dollar"></label><label id="prizeAmountLabel">Gewinn pro Gewinner in Millionen<input name="prize_amount" type="number" required min="1" max="1000000000" value="20" step="1"></label><label>Anzahl Gewinner (1–20)<input name="winner_count" type="number" min="1" max="20" step="1" value="1" required></label><label>Ende am (lokale Zeit)<input type="datetime-local" name="ends_at" value="${localDefault(1440)}" required></label><div class="banner">Öffentlich: alle mit Hub-Konto dürfen teilnehmen. Privat: nur von der Clanleitung freigeschaltete Mitglieder. Die Gewinner werden <b>automatisch und zufällig auf dem Server</b> nach Ablauf gewählt. Pro Hub-Konto höchstens ein Gewinn. Items/Geld müsst ihr danach selbst im Spiel übergeben.</div><button class="btn primary full">Giveaway starten</button></form>`,'CLAN / GIVEAWAYS');
  $('#prizeKind').onchange=e=>{const item=e.target.value==='item';$('#prizeAmountLabel').firstChild.textContent=item?'Item-Menge pro Gewinner':'Gewinn pro Gewinner in Millionen';$('#prizeDetail').value=item?'':'Ingame-Dollar';};
  $('#giveawayForm').onsubmit=async e=>{e.preventDefault();try{const b=formToObj(e.currentTarget);b.ends_at=localISO(b.ends_at);await api('/api/hq/giveaways',b);closeModal();await loadPrivate();toast('Giveaway ist gestartet!');}catch(err){formError(err);}};}
-function showEventForm(){if(!staff())return toast('Nur Clanleitung/Moderation kann Events erstellen.');modal('Clan-Event erstellen',`<form id="eventForm" class="form"><label>Event-Titel<input name="title" required minlength="5" maxlength="80" placeholder="NoMercy Clan-War"></label><label>Eventtyp<select name="category"><option>FFA</option><option>Baseraid</option><option>Turnier</option><option>Training</option><option>Community</option></select></label><label>Infos<textarea name="description" required minlength="10" maxlength="700" placeholder="Ort, Regeln, Ablauf"></textarea></label><label>Beginn<input type="datetime-local" name="starts_at" required value="${localDefault(120)}"></label><label>Dauer in Minuten<input name="duration_minutes" type="number" min="15" max="480" value="90" required></label><label>Max. Teilnehmer<input name="max_players" type="number" min="2" max="100" value="20" required></label><button class="btn primary full">Event eintragen</button></form>`,'CLAN / EVENTS');
+function showEventForm(){if(!eventCreator())return toast('Nur das Event-Team und die Clanleitung können Events erstellen.');modal('Clan-Event erstellen',`<form id="eventForm" class="form"><label>Event-Titel<input name="title" required minlength="5" maxlength="80" placeholder="NoMercy Clan-War"></label><label>Eventtyp<select name="category"><option>FFA</option><option>Baseraid</option><option>Turnier</option><option>Training</option><option>Community</option></select></label><label>Infos<textarea name="description" required minlength="10" maxlength="700" placeholder="Ort, Regeln, Ablauf"></textarea></label><label>Beginn<input type="datetime-local" name="starts_at" required value="${localDefault(120)}"></label><label>Dauer in Minuten<input name="duration_minutes" type="number" min="15" max="480" value="90" required></label><label>Max. Teilnehmer<input name="max_players" type="number" min="2" max="100" value="20" required></label><button class="btn primary full">Event eintragen</button></form>`,'CLAN / EVENTS');
  $('#eventForm').onsubmit=async e=>{e.preventDefault();try{const b=formToObj(e.currentTarget);b.starts_at=localISO(b.starts_at);await api('/api/hq/events',b);closeModal();await loadPrivate();toast('Event erstellt.');}catch(err){formError(err);}};}
 function showReportForm(id){modal('Anzeige melden',`<form id="reportForm" class="form"><label>Warum ist dieses Inserat verdächtig?<textarea name="reason" required minlength="15" maxlength="500" placeholder="Bitte einen konkreten Grund angeben. Normale Handelspreise sind nicht automatisch Betrug."></textarea></label><button class="btn primary full">An Moderation melden</button></form>`,'MARKET / SAFETY');$('#reportForm').onsubmit=async e=>{e.preventDefault();try{await api(`/api/hq/market/${id}/report`,formToObj(e.currentTarget));closeModal();toast('Meldung an Moderation gesendet.');}catch(err){formError(err);}};}
 async function withAction(task){try{await task()}catch(e){toast(e.message)}}
@@ -330,6 +372,10 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
   if(ev.dataset.event==='join')await withAction(async()=>{await api(`/api/hq/events/${id}/join`,{});await loadPrivate();toast('Event-Teilnahme aktualisiert.');});
   if(ev.dataset.event==='close')await withAction(async()=>{const note=askNote('Warum das Event schließen?');if(!note)return;await api(`/api/hq/events/${id}/status`,{status:'closed',note});await loadPrivate();toast('Event geschlossen.');});return;
  }
+ const promote=e.target.closest('[data-clan-promote]');if(promote){
+  if(!confirm(`${promote.dataset.handle} wirklich befördern? Diese Entscheidung wird protokolliert.`))return;
+  await withAction(async()=>{await api('/api/hq/clan/members',{handle:promote.dataset.handle,clan:promote.dataset.clanPromote});await loadTeam();toast('Beförderung gespeichert. Willkommen in der nächsten Clan-Stufe!');});return;
+ }
  const clanReview=e.target.closest('[data-clan-review]');if(clanReview){
   await withAction(async()=>{const id=Number(clanReview.dataset.id),decision=clanReview.dataset.clanReview;
    const note=$(`#join-note-${id}`).value,clan=$(`#join-clan-${id}`).value;
@@ -340,18 +386,19 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
  const hide=e.target.closest('[data-hide-listing]');if(hide)await withAction(async()=>{const note=$('#'+hide.dataset.noteId).value;await api(`/api/hq/market/${hide.dataset.hideListing}/moderate`,{status:'hidden',note});await loadTeam();await loadMarket();toast('Inserat ausgeblendet.');});
 }
 async function init(){setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);$$('.nav [data-tab]').forEach(x=>x.setAttribute('aria-current',x.classList.contains('active')?'page':'false'));document.addEventListener('click',handleClick);$('#accountBtn').onclick=()=>{
- if(!state.user)return showAuth();modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||'Noch keine Clan-Freischaltung')}</p><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
+ if(!state.user)return showAuth();modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||(state.user.role==='event_manager'?'Event-Team':'Noch keine Clan-Freischaltung'))}</p><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
  if(!member()){$('#logoutBtn').insertAdjacentHTML('beforebegin','<button class="btn primary" id="applyFromAccount">Clan-Freigabe beantragen</button>');$('#applyFromAccount').onclick=()=>{closeModal();showClanApplication();};}
  $('#logoutBtn').onclick=async()=>{await withAction(async()=>{await api('/api/logout',{});closeModal();await refreshUser();await loadPrivate();await loadMarket();await setTab('market');toast('Abgemeldet.');});};};
  $('#dialogClose').onclick=closeModal;$('#spinClose').onclick=()=>$('#spinDialog').close();
  $('#drawSoundToggle').onclick=()=>{revealSoundEnabled=!revealSoundEnabled;syncRevealAudioButton();if(revealSoundEnabled)audioForReveal();};
  $('#spinDialog').addEventListener('close',()=>{spinCancelled=true;spinSkip=true;$('#drawStage').classList.remove('rolling');revealAudio?.suspend().catch(()=>{});});
  $('#bankGateLogin').onclick=()=>!state.user?showAuth():showClanApplication();
+ $('#applyLoginBtn').onclick=()=>showAuth();$('#applyForm').onsubmit=submitApplication;
  $('#bankRequestBtn').onclick=showBankRequestForm;$('#bankTransactionBtn').onclick=showBankTransactionForm;
  $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
  $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
  $('#memberForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{await api('/api/hq/clan/members',formToObj(e.currentTarget));e.currentTarget.reset();await loadTeam();toast('Clan-Zugriff aktualisiert.');});};
- try{await Promise.all([refreshUser(),loadMarket()]);await loadPrivate();if(['#giveaways','#events','#bank'].includes(location.hash))await setTab(location.hash.slice(1));}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
+ try{await Promise.all([refreshUser(),loadMarket(),loadCommunityLinks()]);await loadPrivate();if(['#giveaways','#events','#bank','#apply'].includes(location.hash))await setTab(location.hash.slice(1));}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
  setInterval(async()=>{$$('[data-countdown]').forEach(x=>x.textContent=timeLeft(x.dataset.countdown));if(state.tab==='giveaways'&&state.giveaways.some(g=>g.status==='open'&&Date.parse(g.ends_at)<=Date.now()))await withAction(loadPrivate);},1000);
 }
 document.addEventListener('DOMContentLoaded',init);

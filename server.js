@@ -41,7 +41,25 @@ function protectedPreview(req, res) {
 }
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
-const db = new DatabaseSync(path.join(DATA_DIR, 'hub.sqlite'));
+// One-time, consistent pre-migration snapshot. Never overwrite an existing snapshot.
+// VACUUM INTO includes committed WAL transactions even while the previous release runs.
+const dbFile = path.join(DATA_DIR, 'hub.sqlite');
+const preV13 = path.join(DATA_DIR, 'hub-before-v1.3.sqlite');
+if (process.env.NODE_ENV === 'production' && fs.existsSync(dbFile) && !fs.existsSync(preV13)) {
+ const tmp = `${preV13}.tmp`;
+ if (fs.existsSync(tmp)) fs.rmSync(tmp);
+ const original = new DatabaseSync(dbFile, {readOnly:true});
+ try { original.exec(`VACUUM INTO '${tmp.replace(/'/g, "''")}'`); } finally { original.close(); }
+ const check = new DatabaseSync(tmp, {readOnly:true});
+ try {
+  if (check.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') {
+   throw new Error('SQLite pre-upgrade snapshot failed integrity check');
+  }
+ } finally { check.close(); }
+ fs.renameSync(tmp, preV13);
+ console.log('[NoMercy] Pre-v1.3 data snapshot created.');
+}
+const db = new DatabaseSync(dbFile);
 db.exec(`PRAGMA journal_mode=WAL;
 PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS users (
@@ -170,6 +188,17 @@ async function api(req,res,url) {
  if(p.startsWith('/api/hq/bank'))return clanBank.api(req,res,url);
  if(p.startsWith('/api/hq/'))return clanHQ.api(req,res,url,viewer);
  if(p==='/api/health'&&method==='GET')return json(res,200,{ok:true,service:'NoMercy Hub'});
+ if(p==='/api/community-links'&&method==='GET'){
+  const safeDiscordLink=(value)=>{
+   if(typeof value!=='string'||value.length>700)return null;
+   try{const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password)return null;
+    const host=u.hostname.toLowerCase();
+    if(host==='discord.gg'&&/^\/[A-Za-z0-9-]{2,}\/?$/.test(u.pathname))return u.href;
+    if(host==='discord.com'&&(/^\/invite\/[A-Za-z0-9-]{2,}\/?$/.test(u.pathname)||/^\/channels\/\d{10,22}\/\d{10,22}\/?$/.test(u.pathname)))return u.href;
+   }catch{}return null;
+  };
+  return json(res,200,{invite_url:safeDiscordLink(process.env.NOMERCY_DISCORD_INVITE_URL),ticket_url:safeDiscordLink(process.env.NOMERCY_DISCORD_TICKET_URL)});
+ }
  if(p==='/api/me'&&method==='GET'){
   const profile=viewer?db.prepare('SELECT mc_name,bio FROM users WHERE id=?').get(viewer.id):null;
   return json(res,200,{user:viewer?{...viewer,...profile}:null});
@@ -364,12 +393,12 @@ async function api(req,res,url) {
  }
  if(p==='/api/admin/team' && method==='GET') {
   requireStaff(req,true);
-  return json(res,200,{team:db.prepare("SELECT id,handle,role FROM users WHERE role IN ('admin','moderator') ORDER BY role,handle").all()});
+  return json(res,200,{team:db.prepare("SELECT id,handle,role FROM users WHERE role IN ('admin','moderator','event_manager') ORDER BY role,handle").all()});
  }
  if(p==='/api/admin/team' && method==='POST') {
   const staff=requireStaff(req,true);checkRate(req,'moderation-team',15,3600000);
   const b=await readBody(req),handle=bounded(b.handle,20),role=b.role;
-  if(!/^[A-Za-z0-9_]{3,20}$/.test(handle)||!['moderator','member'].includes(role))throw errors(400,'Hub-Name und Rolle moderator/member erforderlich.');
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(handle)||!['moderator','event_manager','member'].includes(role))throw errors(400,'Hub-Name und Rolle moderator/event_manager/member erforderlich.');
   const result=atomic(()=>{
    const target=db.prepare('SELECT id,role FROM users WHERE handle=?').get(handle);
    if(!target)throw errors(404,'Hub-Konto nicht gefunden');

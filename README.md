@@ -116,3 +116,22 @@ MIT-Lizenz. Unabhängiges Fanprojekt von NoMercy. Keine Demonutzer und keine erf
 
 Siehe [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md), inklusive manuellem Railway-Volume-Backup, Admin-Aktivierung und Rollback.
 
+
+
+## V1.1 – Event-Team & sichtbare Ladeanimationen
+
+Admins können auf `/moderation.html` vertrauenswürdige Hub-Konten als **Event-Team** (`event_manager`) oder **Moderator** ernennen und wieder auf `member` zurücksetzen. Die neue Event-Team-Rolle ist bewusst eingeschränkt: Clan-Events ansehen, erstellen, teilnehmen und **nur eigene** Events schließen; keine Bank, keine Giveaway-Erstellung/Auszahlung, keine Moderation und keine Clan-Freigabe. Moderatoren behalten die bisherigen Rechte für Event-, Giveaway- und Marktplatzverwaltung. Jede Rollenzuweisung wird im bestehenden `moderation_log` erfasst; Zugriffsrechte werden bei jeder Anfrage erneut aus der Datenbank geprüft.
+
+Skeletons sind nun bei sehr schnellen API-Antworten für ca. 0,32–0,39 Sekunden sichtbar, bei langsamen Antworten bleiben sie bis zur tatsächlichen Antwort. `prefers-reduced-motion` vermeidet jede künstliche Verzögerung. Die Website zeigt niemals erfundene Event- oder Marktdaten.
+
+
+## V1.2 – Clan-Bewerbung & Discord
+
+Im neuen öffentlichen Tab **Bewerben** gibt es ein Clanformular mit Minecraft-Bedrock-Namen, Wunschclan, Spielstil, Online-Zeit, optionalem Discord-Namen und Motivation. Ein Hub-Konto ist zum Absenden nötig; nach dem Absenden sieht man den Status. Die vorhandene Admin-Freigabe für Main/Clan 2/Clan 3 bleibt unverändert. Zusätzliche Formularangaben werden als strukturierter Text im bestehenden `message` gespeichert (keine Migration, keine Beeinträchtigung bestehender Bewerbungen). Namen sind weiterhin **nicht verifiziert**. Bitte keine persönlichen Daten oder Login-Credentials ins Formular eintragen.
+
+Discord-/Ticket-Links werden ausschließlich als **öffentliche URLs in den Railway-Variablen des neuen Clan-HQ-Services** konfiguriert: `NOMERCY_DISCORD_INVITE_URL` (Discord-Einladung) und `NOMERCY_DISCORD_TICKET_URL` (bestehender Bewerbungs-/Ticketkanal). Unterstützt werden gültige `https://discord.gg/…`, `https://discord.com/invite/…` und für den Ticketlink `https://discord.com/channels/SERVER_ID/CHANNEL_ID`. Fehlen diese Variablen, zeigt der Hub einen ehrlichen Konfigurationshinweis – keinen Fake-Link. Die Website greift **nicht** in den vorhandenen Ticket-Bot ein und erzeugt keine automatischen Tickets.
+
+
+## Mainclan nur durch Aufstieg
+
+Bewerbungen werden ausschließlich für **Clan 3 oder Clan 2** angenommen. Die Clanleitung kann ein bestehendes Mitglied manuell von **Clan 3 → Clan 2 → Main** befördern. Die API verbietet sowohl direkte Main-Bewerbungen als auch direkte Main-Freischaltungen ohne vorherige Clan-2-Mitgliedschaft. Alle Beförderungen werden im Audit-Protokoll dokumentiert. Vorhandene Main-Mitgliedschaften bleiben erhalten. Es gibt keine automatische Beförderung nach Punkten oder Zeit.
