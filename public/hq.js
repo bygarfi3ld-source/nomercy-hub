@@ -31,7 +31,7 @@ function showAuth(register=false){modal(register?'Konto erstellen':'Anmelden',au
  $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();if(state.tab==='apply')await loadApplication();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
 function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.handle} ↗`:'Anmelden';
  $$('.staff-action').forEach(x=>x.hidden=!staff());$$('.event-action').forEach(x=>x.hidden=!eventCreator());$('#moderationNav').hidden=!staff();$('#membersNav').hidden=!staff();
- $('#memberManagement').hidden=u?.role!=='admin';$('#memberList').hidden=u?.role!=='admin';
+ $('#memberManagement').hidden=u?.role!=='admin';$('#memberList').hidden=u?.role!=='admin';$('#clanApplicationsPanel').hidden=u?.role!=='admin';
  $('#bankTransactionBtn').hidden=u?.role!=='admin';$('#bankRequestBtn').hidden=!bankEligible();
  $('#memberbar').textContent=!u?'Marktplatz für alle · Öffentliche Giveaways mit Hub-Konto · Clan-Events nur mit Freigabe.':
  u.clan?`${u.handle} · ${labelClan[u.clan]||u.clan} · Clan-Zugang aktiv. Gewinne werden manuell ingame übergeben.`:
@@ -166,15 +166,25 @@ async function loadTeam(){if(!staff())return;
  if(state.user.role==='admin'){
   const {members}=await api('/api/hq/clan/members');state.members=members;
   const applications=await api('/api/hq/clan/requests');
-  $('#clanApplications').innerHTML=applications.requests.filter(r=>r.status==='pending').length?
-   applications.requests.filter(r=>r.status==='pending').map(r=>`<article class="tile clan-application">
-    <div class="tile-top"><span class="pill red">● OFFENE ANFRAGE</span><span class="meta">#${r.id}</span></div>
-    <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan])}</p>
-    <p class="desc">${esc(r.message)}</p><div class="meta">Eingereicht: ${date(r.created_at)}</div>
-    <label>Clanleitung entscheidet: <select id="join-clan-${r.id}"><option value="clan3">Clan 3</option><option value="clan2">Clan 2</option></select></label>
-    <label>Begründung <textarea id="join-note-${r.id}" maxlength="400" minlength="8" placeholder="Prüfung, Entscheidung und Trustfactor …"></textarea></label>
-    <div class="actions"><button class="btn outline" data-clan-review="reject" data-id="${r.id}">Ablehnen</button><button class="btn primary" data-clan-review="approve" data-id="${r.id}">Freischalten</button></div>
-    </article>`).join(''):'<div class="empty"><strong>Keine offenen Anfragen.</strong>Neue Bewerbungen erscheinen hier.</div>';
+  const requests=Array.isArray(applications.requests)?applications.requests:[];
+  const pending=requests.filter(r=>r.status==='pending'),history=requests.filter(r=>r.status!=='pending');
+  $('#clanApplicationsSummary').textContent=`${pending.length} offen · ${history.length} bearbeitet · ${requests.length} angezeigt`;
+  $('#clanApplications').innerHTML=pending.length?pending.map(r=>`<article class="tile clan-application">
+   <div class="tile-top"><span class="pill red">● OFFENE ANFRAGE</span><span class="meta">#${r.id}</span></div>
+   <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan]||r.desired_clan)}</p>
+   <p class="desc">${esc(r.message)}</p><div class="meta">Eingereicht: ${date(r.created_at)}</div>
+   <label>Clanleitung entscheidet: <select id="join-clan-${r.id}"><option value="clan3">Clan 3</option><option value="clan2">Clan 2</option></select></label>
+   <label>Begründung <textarea id="join-note-${r.id}" maxlength="400" minlength="8" placeholder="Prüfung, Entscheidung und Trustfactor …"></textarea></label>
+   <div class="actions"><button class="btn outline" data-clan-review="reject" data-id="${r.id}">Ablehnen</button><button class="btn primary" data-clan-review="approve" data-id="${r.id}">Freischalten</button></div>
+   </article>`).join(''):`<div class="empty"><strong>Keine offenen Bewerbungen.</strong>${history.length?'Bereits bearbeitete Anträge findest du direkt darunter.':'Hier ist aktuell kein Bewerbungsantrag gespeichert. Bitte den Spieler die Hub-Bewerbung abschicken lassen. Discord-Tickets werden nicht automatisch übernommen.'}</div>`;
+  const reviewedLabel={approved:'✓ GENEHMIGT',rejected:'✕ ABGELEHNT'};
+  $('#clanApplicationsHistory').innerHTML=history.length?history.map(r=>`<article class="tile clan-application is-reviewed">
+   <div class="tile-top"><span class="pill ${r.status==='approved'?'approved':'rejected'}">${esc(reviewedLabel[r.status]||r.status)}</span><span class="meta">#${r.id}</span></div>
+   <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan]||r.desired_clan)}</p>
+   <p class="desc">${esc(r.message)}</p>
+   <div class="meta">Eingereicht: ${date(r.created_at)} · Bearbeitet: ${date(r.updated_at)}${r.reviewed_by_handle?' · von '+esc(r.reviewed_by_handle):''}</div>
+   ${r.review_note?`<p class="desc">Entscheidung: ${esc(r.review_note)}</p>`:''}
+   </article>`).join(''):'<div class="empty">Noch keine bearbeiteten Clan-Bewerbungen.</div>';
   $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small>${u.clan==='clan3'?`<button type="button" class="btn outline" data-clan-promote="clan2" data-handle="${esc(u.handle)}">⬆ Zu Clan 2 befördern</button>`:u.clan==='clan2'?`<button type="button" class="btn primary" data-clan-promote="main" data-handle="${esc(u.handle)}">👑 In den Mainclan befördern</button>`:''}</div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';
  }
  const data=await api('/api/hq/mod/market');state.reports=data.reports;
@@ -423,6 +433,7 @@ async function init(){
  $('#bankRequestBtn').onclick=showBankRequestForm;$('#bankTransactionBtn').onclick=showBankTransactionForm;
  $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
  $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
+ $('#refreshClanApplicationsBtn').onclick=()=>withAction(loadTeam);
  $('#memberForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{await api('/api/hq/clan/members',formToObj(e.currentTarget));e.currentTarget.reset();await loadTeam();toast('Clan-Zugriff aktualisiert.');});};
  try{await Promise.all([refreshUser(),loadMarket(),loadCommunityLinks()]);await loadPrivate();if(initialTab!=='market')await setTab(initialTab,{historyMode:'none',resetScroll:false});}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
  setInterval(async()=>{$$('[data-countdown]').forEach(x=>x.textContent=timeLeft(x.dataset.countdown));if(state.tab==='giveaways'&&state.giveaways.some(g=>g.status==='open'&&Date.parse(g.ends_at)<=Date.now()))await withAction(loadPrivate);},1000);
