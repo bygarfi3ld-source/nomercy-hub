@@ -13,3 +13,8 @@ test('non-home tabs get page indicator and hide the home hero',()=>{
  assert.match(js,/marker\.hidden=home/);assert.match(css,/\.section-marker\{/);
  assert.match(js,/history\.pushState/);assert.match(js,/window\.scrollTo/);
 });
+
+test('navigation initializes all buttons without calling forEach on one element',()=>{
+ assert.match(js,/\$\$\('\.nav \[data-tab\]'\)\.forEach/);
+ assert.doesNotMatch(js,/(^|\n)\s\$\('\.nav \[data-tab\]'\)\.forEach/);
+});
