@@ -181,7 +181,7 @@ function showSection(tab){
   marker.innerHTML='<span class="section-marker-eyebrow">DU BIST HIER</span><strong class="section-marker-name"></strong><span class="section-marker-identity">NO MERCY / CLAN HQ</span>';
   $('.topbar').insertAdjacentElement('afterend',marker);}
  marker.hidden=home;marker.querySelector('.section-marker-name').textContent=sectionNames[tab];
- $('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');x.setAttribute('aria-pressed',String(selected));if(selected)x.scrollIntoView({behavior:'instant',block:'nearest',inline:'nearest'});});
+ $('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');x.setAttribute('aria-pressed',String(selected));if(selected&&typeof x.scrollIntoView==='function'&&document.readyState==='complete')x.scrollIntoView({behavior:'auto',block:'nearest',inline:'nearest'});});
  $$('.tab-panel').forEach(x=>{const visible=x.id===tab+'Panel';x.hidden=!visible;x.classList.remove('panel-enter');if(visible&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){void x.offsetWidth;x.classList.add('panel-enter');}});
  document.title=`${sectionNames[tab]} · NoMercy Clan HQ`;
 }
