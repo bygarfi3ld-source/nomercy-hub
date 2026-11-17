@@ -213,6 +213,15 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    });
    return json(res,200,{ok:true});
   }
+  // Public directory of confirmed Hub clan memberships only. Never publish pending applications.
+  if(p==='/api/hq/clan/roster'){
+   getOnly(m);
+   const members=db.prepare(`SELECT u.handle,cm.clan FROM clan_memberships cm
+     JOIN users u ON u.id=cm.user_id
+     ORDER BY CASE cm.clan WHEN 'main' THEN 1 WHEN 'clan2' THEN 2 ELSE 3 END, LOWER(u.handle) ASC
+     LIMIT 1000`).all();
+   return json(res,200,{members});
+  }
   if(p==='/api/hq/clan/members'){
    if(m==='GET'){
     requireStaff(req,true);

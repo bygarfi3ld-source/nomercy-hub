@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const date=x=>new Date(x).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-const state={user:null,market:[],events:[],giveaways:[],members:[],reports:[],bank:null,tab:'market'};
+const state={user:null,market:[],events:[],giveaways:[],members:[],roster:[],teamRoles:[],reports:[],bank:null,tab:'market'};
 let toastTimeout,spinCancelled=false,spinActive=false,spinSkip=false;
 const staff=()=>['admin','moderator'].includes(state.user?.role);
 const eventCreator=()=>staff()||state.user?.role==='event_manager';
@@ -31,7 +31,8 @@ function showAuth(register=false){modal(register?'Konto erstellen':'Anmelden',au
  $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();if(state.tab==='apply')await loadApplication();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
 function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.handle} ↗`:'Anmelden';
  $$('.staff-action').forEach(x=>x.hidden=!staff());$$('.event-action').forEach(x=>x.hidden=!eventCreator());$('#moderationNav').hidden=!staff();$('#membersNav').hidden=!staff();
- $('#memberManagement').hidden=u?.role!=='admin';$('#memberList').hidden=u?.role!=='admin';$('#clanApplicationsPanel').hidden=u?.role!=='admin';
+ $('#memberManagement').hidden=u?.role!=='admin';$('#approvedMembersPanel').hidden=u?.role!=='admin';$('#teamRolesPanel').hidden=u?.role!=='admin';$('#clanApplicationsPanel').hidden=u?.role!=='admin';
+ $('#membersPanel').setAttribute('aria-label','Clan-Team – nur für berechtigte Teammitglieder');
  $('#bankTransactionBtn').hidden=u?.role!=='admin';$('#bankRequestBtn').hidden=!bankEligible();
  $('#memberbar').textContent=!u?'Marktplatz für alle · Öffentliche Giveaways mit Hub-Konto · Clan-Events nur mit Freigabe.':
  u.clan?`${u.handle} · ${labelClan[u.clan]||u.clan} · Clan-Zugang aktiv. Gewinne werden manuell ingame übergeben.`:
@@ -167,7 +168,7 @@ function renderPrivate(){
  <div class="actions">${live?`<button class="btn ${e.joined?'outline':'primary'}" data-event="join" data-id="${e.id}">${e.joined?'✓ Abmelden':'Teilnehmen'}</button>`:'<button class="btn outline" disabled>Beendet</button>'}${(staff()||(state.user?.role==='event_manager'&&e.is_owner))&&live?`<button class="btn outline" data-event="close" data-id="${e.id}">Schließen</button>`:''}</div></article>`;
  }).join(''):'<div class="empty"><strong>Noch keine Clan-Events geplant.</strong>Noch keine Termine eingetragen.</div>';
 }
-const sectionNames={market:'Marktplatz',giveaways:'Giveaways',events:'Clan-Events',apply:'Bewerben',bank:'Clanbank',members:'Clan-Team'};
+const sectionNames={market:'Marktplatz',giveaways:'Giveaways',events:'Clan-Events',roster:'Mitglieder',apply:'Bewerben',bank:'Clanbank',members:'Clan-Team'};
 // A real navigation state: the large home hero must not obscure inner pages.
 function showSection(tab){
  if(!Object.hasOwn(sectionNames,tab))tab='market';
@@ -180,21 +181,41 @@ function showSection(tab){
   marker.innerHTML='<span class="section-marker-eyebrow">DU BIST HIER</span><strong class="section-marker-name"></strong><span class="section-marker-identity">NO MERCY / CLAN HQ</span>';
   $('.topbar').insertAdjacentElement('afterend',marker);}
  marker.hidden=home;marker.querySelector('.section-marker-name').textContent=sectionNames[tab];
- $$('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');});
+ $('.nav [data-tab]').forEach(x=>{const selected=x.dataset.tab===tab;x.classList.toggle('active',selected);x.setAttribute('aria-current',selected?'page':'false');x.setAttribute('aria-pressed',String(selected));if(selected)x.scrollIntoView({behavior:'instant',block:'nearest',inline:'nearest'});});
  $$('.tab-panel').forEach(x=>{const visible=x.id===tab+'Panel';x.hidden=!visible;x.classList.remove('panel-enter');if(visible&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){void x.offsetWidth;x.classList.add('panel-enter');}});
  document.title=`${sectionNames[tab]} · NoMercy Clan HQ`;
 }
 async function setTab(tab,{historyMode='push',resetScroll=true}={}){
  if(!Object.hasOwn(sectionNames,tab))tab='market';
+ if(tab==='members'&&!staff())tab='roster';
+ if(tab===state.tab&&historyMode==='push')return;
  showSection(tab);
  if(historyMode==='push'&&location.hash!=='#'+tab)history.pushState(null,'','#'+tab);
  // Reset the viewport immediately; users should never remain above an invisible subpage.
  if(resetScroll)window.scrollTo({top:0,behavior:'instant'});
  await syncApprovedAccess();
- if(tab==='members'&&staff())await loadTeam();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();
+ if(tab==='members'&&staff())await loadTeam();if(tab==='roster')await loadRoster();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();
+}
+async function loadRoster(){
+ const {members}=await api('/api/hq/clan/roster');state.roster=Array.isArray(members)?members:[];renderRoster();
+}
+function renderRoster(){
+ const search=($('#rosterSearch').value||'').trim().toLocaleLowerCase('de-DE');
+ const filter=$('#rosterFilter').value;
+ const members=state.roster.filter(u=>(filter==='all'||u.clan===filter)&&String(u.handle).toLocaleLowerCase('de-DE').includes(search));
+ const counts=Object.fromEntries(['main','clan2','clan3'].map(x=>[x,state.roster.filter(u=>u.clan===x).length]));
+ $('#rosterSummary').innerHTML='<span><strong>'+state.roster.length+'</strong> Mitglieder</span>'+['main','clan2','clan3'].map(x=>'<span><strong>'+counts[x]+'</strong> '+esc(labelClan[x])+'</span>').join('');
+ $('#rosterCount').textContent=members.length+' von '+state.roster.length+' bestätigten Mitgliedern';
+ $('#rosterList').innerHTML=members.length?members.map(u=>'<article class="roster-person"><span class="roster-avatar" aria-hidden="true">'+esc(u.handle.slice(0,1).toUpperCase())+'</span><span class="roster-person-info"><strong>'+esc(u.handle)+'</strong><small>Bestätigtes Hub-Clanmitglied</small></span><span class="roster-rank rank-'+esc(u.clan)+'">'+esc(labelClan[u.clan]||u.clan)+'</span></article>').join(''):'<div class="empty"><strong>Keine passenden Mitglieder.</strong>'+ (state.roster.length?'Versuche einen anderen Suchbegriff oder Clan.':'Noch keine Mitglieder im Hub bestätigt.') +'</div>';
+}
+async function loadTeamRoles(){
+ if(state.user?.role!=='admin')return;
+ const {team}=await api('/api/admin/team');state.teamRoles=Array.isArray(team)?team:[];
+ $('#teamRoleList').innerHTML=state.teamRoles.length?state.teamRoles.map(u=>'<div class="team-role-item"><span><strong>'+esc(u.handle)+'</strong><small>'+esc(({admin:'Administrator',moderator:'Moderator · Giveaways & Moderation',event_manager:'Event-Team · nur Events'})[u.role]||u.role)+'</small></span><span class="pill '+(u.role==='admin'?'red':'dark')+'">'+esc(u.role==='admin'?'OWNER':u.role==='moderator'?'MOD':'EVENT')+'</span></div>').join(''):'<p class="muted">Noch keine Teamrollen vergeben.</p>';
 }
 async function loadTeam(){if(!staff())return;
  if(state.user.role==='admin'){
+  await loadTeamRoles();
   const {members}=await api('/api/hq/clan/members');state.members=members;
   const applications=await api('/api/hq/clan/requests');
   const requests=Array.isArray(applications.requests)?applications.requests:[];
@@ -474,6 +495,13 @@ async function init(){
  $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
  $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
  $('#refreshClanApplicationsBtn').onclick=()=>withAction(loadTeam);
+ $('#rosterSearch').oninput=renderRoster;$('#rosterFilter').onchange=renderRoster;$('#rosterRefresh').onclick=()=>withAction(loadRoster);
+ $('#teamRoleForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{
+  const payload=formToObj(e.currentTarget);
+  if(!confirm('Hub-Konto '+payload.handle+' wirklich die Rolle "'+payload.role+'" geben? Diese Rolle steuert echte Moderationsrechte.'))return;
+  await api('/api/admin/team',payload);
+  e.currentTarget.reset();await loadTeamRoles();toast('Team-Rechte aktualisiert.');
+ });};
  $('#memberForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{await api('/api/hq/clan/members',formToObj(e.currentTarget));e.currentTarget.reset();await loadTeam();toast('Clan-Zugriff aktualisiert.');});};
  try{await Promise.all([refreshUser(),loadMarket(),loadCommunityLinks()]);await loadPrivate();if(initialTab!=='market')await setTab(initialTab,{historyMode:'none',resetScroll:false});}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
  setInterval(async()=>{$$('[data-countdown]').forEach(x=>x.textContent=timeLeft(x.dataset.countdown));if(state.tab==='giveaways'&&state.giveaways.some(g=>g.status==='open'&&Date.parse(g.ends_at)<=Date.now()))await withAction(loadPrivate);},1000);

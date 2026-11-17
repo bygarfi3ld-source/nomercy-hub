@@ -593,3 +593,41 @@ body[data-section]:not([data-section='market']) .memberbar{margin-bottom:22px}
 .apply-mode-choice:hover:not(.selected){border-color:#d994a1;color:#a74a5b}
 #accessForm .apply-info{border-radius:12px;margin-bottom:5px}
 @media(max-width:680px){.apply-mode-switcher{grid-template-columns:1fr;gap:7px}.apply-mode-choice{padding:12px 10px}}
+
+
+/* V1.6 — calm, predictable navigation & confirmed member directory */
+html{scroll-behavior:auto}
+.nav{scrollbar-width:thin;scrollbar-color:#7c4755 transparent}
+.nav button{border-radius:9px 9px 0 0;transition:background .15s ease,color .15s ease,border-color .15s ease}
+.nav button.active{background:#692d3d;color:#fff;border-color:#ff717a}
+.nav button:focus-visible,.roster-toolbar button:focus-visible,.team-role-item button:focus-visible{outline:2px solid #ff8a93;outline-offset:2px}
+.section-marker{min-height:57px;box-shadow:none}
+.section-marker-name{font-size:21px}
+body[data-section]:not([data-section='market']) .memberbar{margin-bottom:21px}
+.roster-panel .sectionhead{margin-bottom:22px}
+.roster-summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.roster-summary>span{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#fff;border:1px solid #e8e5e5;border-radius:13px;color:#5c606a;font-size:12px;font-weight:750}
+.roster-summary strong{color:#16171e;font-size:23px;font-family:'Barlow Condensed',sans-serif}
+.roster-toolbar{display:flex;gap:11px;align-items:end;flex-wrap:wrap;margin-bottom:15px}
+.roster-toolbar label{font-size:12px;font-weight:800;color:#565a63;flex:1;min-width:175px}
+.roster-toolbar label.roster-search{flex:2}
+.roster-toolbar input,.roster-toolbar select{margin-top:7px}
+.roster-toolbar .btn{min-height:46px}
+.roster-count{font-size:12px;color:#6f727a;margin-bottom:13px;font-weight:700}
+.roster-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.roster-person{display:flex;gap:13px;align-items:center;min-width:0;background:#fff;border:1px solid #eae6e6;border-radius:14px;padding:15px;box-shadow:0 5px 12px #10111505}
+.roster-avatar{display:grid;place-items:center;flex:0 0 43px;height:43px;background:#241b21;color:#ffdce1;border-radius:13px;font-size:18px;font-weight:900}
+.roster-person-info{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.roster-person-info strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.roster-person-info small{font-size:11px;color:#888a91}
+.roster-rank{border-radius:8px;background:#f1f1f3;color:#4e5159;padding:7px 9px;font-size:11px;font-weight:900;white-space:nowrap}
+.roster-rank.rank-main{background:#fff4d9;color:#795515}
+.roster-rank.rank-clan2{background:#eceefd;color:#394b83}
+.roster-rank.rank-clan3{background:#eef4f3;color:#31685c}
+.team-role-list{display:grid;gap:8px}
+.team-role-item{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:13px 14px;border:1px solid #e7e5e7;border-radius:11px;background:#fcfbfa}
+.team-role-item>span:first-child{display:grid;gap:4px}
+.team-role-item small{color:#72747c;font-size:11px}
+#teamRolesPanel .muted{font-size:13px;line-height:1.6}
+@media(max-width:1000px){.nav{justify-content:flex-start;max-width:100%}.nav button{flex:0 0 auto;white-space:nowrap}}
+@media(max-width:680px){.topinner{padding-bottom:8px}.nav{justify-content:flex-start;scroll-snap-type:x proximity;scroll-padding-inline:10px}.nav button{flex:0 0 auto;scroll-snap-align:start;min-height:43px}.section-marker{position:relative;gap:10px}.roster-list{grid-template-columns:1fr}.roster-summary{gap:6px}.roster-summary>span{padding:9px 11px;flex-grow:1;justify-content:center}.roster-summary strong{font-size:19px}.roster-toolbar{flex-direction:column;align-items:stretch}.roster-toolbar label{min-width:0;width:100%}.roster-toolbar .btn{width:100%}.roster-rank{font-size:10px}.roster-person{padding:12px}}
