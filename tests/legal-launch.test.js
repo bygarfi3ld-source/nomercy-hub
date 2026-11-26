@@ -26,7 +26,7 @@ test('German legal pages carry statutory disclosures and private runtime placeho
   assert.match(privacy,phrase);
  }
  assert.match(privacy,/Schriftarten des Endgeräts/);
- assert.match(privacy,/internationale/);
+ assert.match(privacy,/USA/);
 });
 test('Website links to legal pages directly but discreetly in footer on desktop and mobile',()=>{
  const main=read('public/index.html'),js=read('public/hq.js'),moderation=read('public/moderation.html');
