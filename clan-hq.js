@@ -308,7 +308,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    if(m==='GET'){
     drawDue();const rows=db.prepare(`SELECT g.*,u.handle AS creator_handle FROM clan_giveaways g
       JOIN users u ON u.id=g.creator_id
-      WHERE g.visibility='public' OR ?=1 ORDER BY g.created_at DESC LIMIT 100`).all(membership(viewer)?1:0);
+      WHERE g.status!='cancelled' AND (g.visibility='public' OR ?=1) ORDER BY g.created_at DESC LIMIT 100`).all(membership(viewer)?1:0);
     return json(res,200,{giveaways:rows.map(g=>giveawayView(g,viewer))});
    }
    postOnly(m);const staff=requireStaff(req);checkRate(req,'hq-giveaway-create',6,3600000);
@@ -326,7 +326,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    if(m==='GET'&&!gm[2]){
     drawOne(id);
     const g=db.prepare('SELECT g.*,u.handle AS creator_handle FROM clan_giveaways g JOIN users u ON u.id=g.creator_id WHERE g.id=?').get(id);
-    if(!g|| (g.visibility==='clan'&&!membership(viewer)))throw errors(404,'Giveaway nicht gefunden');
+    if(!g||g.status==='cancelled'||(g.visibility==='clan'&&!membership(viewer)))throw errors(404,'Giveaway nicht gefunden');
     return json(res,200,{giveaway:giveawayView(g,viewer)});
    }
    postOnly(m);
