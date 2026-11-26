@@ -29,7 +29,7 @@ const authHTML=(register=false)=>`<form class="form" id="authForm">
  <label>Passwort<input type="password" name="password" autocomplete="${register?'new-password':'current-password'}" minlength="${register?10:1}" maxlength="128" required placeholder="${register?'Mindestens 10 Zeichen':'Dein Passwort'}"></label>
  <button class="btn primary full">${register?'Konto erstellen':'Anmelden'}</button>
  <button class="textlink" type="button" id="switchAuth">${register?'Schon ein Konto? Anmelden':'Neu hier? Hub-Konto erstellen'}</button>
- <small>Eigenes Hub-Passwort verwenden – niemals Minecraft- oder Microsoft-Zugangsdaten. Minecraft-Namen sind nicht verifiziert.</small></form>`;
+ <small>Eigenes Hub-Passwort verwenden – niemals Minecraft- oder Microsoft-Zugangsdaten. Minecraft-Namen sind nicht verifiziert. <a href="/datenschutz.html" target="_blank" rel="noopener noreferrer">Datenschutz</a>.</small></form>`;
 function showAuth(register=false){modal(register?'Konto erstellen':'Anmelden',authHTML(register),'HUB ACCOUNT');$('#switchAuth').onclick=()=>showAuth(!register);
  $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();if(state.tab==='apply')await loadApplication();if(state.tab==='missions')await loadMissions();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
 function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.handle} ↗`:'Anmelden';$('#existingAccessBtn').hidden=!!u?.clan;$('#existingAccessBtn').textContent=u?'✓ Zugang bestätigen':'✓ Schon im Clan?';
