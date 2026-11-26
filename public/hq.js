@@ -257,11 +257,52 @@ async function loadTeam(){if(!staff())return;
  const data=await api('/api/hq/mod/market');state.reports=data.reports;
  $('#marketReports').innerHTML=data.reports.filter(r=>r.status==='open').length?data.reports.filter(r=>r.status==='open').map(r=>`<div class="tile mod-report-card"><strong>${esc(r.listing_title)} · #${r.listing_id}</strong><p class="desc">${esc(r.reason)}</p><small>Von ${esc(r.reporter)} · ${date(r.created_at)}</small><label class="tag">Begründung<textarea id="report-note-${r.id}" maxlength="400"></textarea></label><div class="actions"><button class="btn outline" data-review="dismissed" data-id="${r.id}">Verwerfen</button><button class="btn primary" data-review="reviewed" data-id="${r.id}">Prüfung speichern</button><button class="btn outline" data-hide-listing="${r.listing_id}" data-note-id="report-note-${r.id}">Inserat ausblenden</button></div></div>`).join(''):'<p class="muted">Keine offenen Markt-Meldungen.</p>';finishSkeleton('#marketReports');
 }
+function currentTaxMonth(){
+ const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+ return p.find(x=>x.type==='year').value+'-'+p.find(x=>x.type==='month').value;
+}
+async function loadMonthlyTaxes(){
+ if(!taxStaff()){state.taxes=null;$('#bankTaxPanel').hidden=true;return;}
+ const picker=$('#bankTaxMonth'),max=currentTaxMonth();picker.max=max;
+ if(!picker.value)picker.value=max;
+ const month=picker.value;
+ $('#bankTaxPanel').hidden=false;
+ setSkeleton('#bankTaxList',3,'row');
+ $('#bankTaxSummary').textContent='Monatsliste wird geladen …';
+ try{
+  const result=await api('/api/hq/bank/taxes?month='+encodeURIComponent(month));
+  if(picker.value!==month)return;
+  state.taxes=result;renderMonthlyTaxes();finishSkeleton('#bankTaxList');
+ }catch(e){loadingError('#bankTaxList',e.message);$('#bankTaxSummary').textContent='Steuerliste nicht verfügbar.';throw e;}
+}
+function renderMonthlyTaxes(){
+ const d=state.taxes;if(!d)return;
+ const total=d.rows.length;
+ $('#bankTaxSummary').innerHTML='<strong>'+d.paid+' bezahlt</strong> · <strong>'+d.unpaid+' offen</strong> · '+total+' in der Monatsliste';
+ $('#bankTaxList').innerHTML=total?d.rows.map(u=>`<label class="bank-tax-row ${u.paid?'is-paid':'is-open'}">
+  <input type="checkbox" data-tax-check data-user-id="${u.user_id}" ${u.paid?'checked':''} aria-label="${esc(u.handle)}: Steuer bezahlt">
+  <span class="bank-tax-details"><strong>${esc(u.handle)}</strong><small>${esc(labelClan[u.clan]||u.clan)}${u.still_member?'':' · Clan verlassen'}</small></span>
+  <span class="bank-tax-status">${u.paid?'✓ Bezahlt':'Offen'}</span>
+  <small class="bank-tax-meta">${u.updated_by?'Von '+esc(u.updated_by):'Noch nicht bestätigt'}${u.updated_at?' · '+date(u.updated_at):''}</small>
+ </label>`).join(''):'<div class="bank-empty"><strong>Keine Mitglieder in diesem Monat erfasst.</strong><p>Die aktuelle Monatsliste wird aus bestätigten Clanmitgliedern erstellt. Ältere Monate sind nur sichtbar, wenn sie zuvor erfasst wurden.</p></div>';
+}
+async function updateMonthlyTax(input){
+ if(!taxStaff()||!state.taxes)return;
+ const month=state.taxes.month,userId=Number(input.dataset.userId),paid=input.checked;
+ input.disabled=true;
+ try{
+  const updated=await api('/api/hq/bank/taxes',{month,user_id:userId,paid});
+  if($('#bankTaxMonth').value===month){state.taxes=updated;renderMonthlyTaxes();}
+  toast(paid?'Steuerzahlung bestätigt.':'Steuer wieder als offen markiert.');
+ }catch(e){input.checked=!paid;toast('Änderung nicht gespeichert: '+e.message);input.disabled=false;}
+}
 function bankLocked(){
- $('#bankGate').hidden=false;$('#bankContent').hidden=true;
+ $('#bankGate').hidden=taxStaff();$('#bankContent').hidden=true;
  $('#bankGateLogin').textContent=state.user?'Freigabe bei der Clanleitung anfragen':'Hub-Konto anmelden';
 }
 async function loadBank(){
+ if(taxStaff())await loadMonthlyTaxes();
+ else{$('#bankTaxPanel').hidden=true;state.taxes=null;}
  if(!bankEligible()){state.bank=null;bankLocked();return;}
  $('#bankGate').hidden=true;$('#bankContent').hidden=false;
  const started=performance.now();setSkeleton('#bankRequestList',2);setSkeleton('#bankTransactionList',2);
@@ -520,6 +561,10 @@ async function init(){
  $('#applyModeNew').onclick=()=>{applicationMode='application';renderApplicationMode();};
  $('#applyModeExisting').onclick=()=>{applicationMode='existing';renderApplicationMode();};
  $('#bankRequestBtn').onclick=showBankRequestForm;$('#bankTransactionBtn').onclick=showBankTransactionForm;
+ $('#bankTaxJump').onclick=()=>$('#bankTaxPanel').scrollIntoView({behavior:prefersReducedMotion()?'auto':'smooth',block:'start'});
+ $('#bankTaxMonth').onchange=()=>withAction(loadMonthlyTaxes);
+ $('#bankTaxRefresh').onclick=()=>withAction(loadMonthlyTaxes);
+ document.addEventListener('change',e=>{const box=e.target.closest('input[data-tax-check]');if(box)void updateMonthlyTax(box);});
  $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
  $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
  $('#refreshClanApplicationsBtn').onclick=()=>withAction(loadTeam);
