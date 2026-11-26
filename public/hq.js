@@ -279,12 +279,25 @@ function renderMonthlyTaxes(){
  const d=state.taxes;if(!d)return;
  const total=d.rows.length;
  $('#bankTaxSummary').innerHTML='<strong>'+d.paid+' bezahlt</strong> · <strong>'+d.unpaid+' offen</strong> · '+total+' in der Monatsliste';
- $('#bankTaxList').innerHTML=total?d.rows.map(u=>`<label class="bank-tax-row ${u.paid?'is-paid':'is-open'}">
-  <input type="checkbox" data-tax-check data-user-id="${u.user_id}" ${u.paid?'checked':''} aria-label="${esc(u.handle)}: Steuer bezahlt">
-  <span class="bank-tax-details"><strong>${esc(u.handle)}</strong><small>${esc(labelClan[u.clan]||u.clan)}${u.still_member?'':' · Clan verlassen'}</small></span>
-  <span class="bank-tax-status">${u.paid?'✓ Bezahlt':'Offen'}</span>
-  <small class="bank-tax-meta">${u.updated_by?'Von '+esc(u.updated_by):'Noch nicht bestätigt'}${u.updated_at?' · '+date(u.updated_at):''}</small>
- </label>`).join(''):'<div class="bank-empty"><strong>Keine Mitglieder in diesem Monat erfasst.</strong><p>Die aktuelle Monatsliste wird aus bestätigten Clanmitgliedern erstellt. Ältere Monate sind nur sichtbar, wenn sie zuvor erfasst wurden.</p></div>';
+ const groups=[['main','👑 Steuern Mainclan'],['clan2','⚔ Steuern 2. Clan'],['clan3','🛡 Steuern 3. Clan']];
+ $('#bankTaxList').innerHTML=groups.map(([clan,heading])=>{
+  const rows=d.rows.filter(u=>u.clan===clan);
+  const paid=rows.filter(u=>u.paid).length;
+  const unpaid=rows.length-paid;
+  const items=rows.map(u=>`<label class="bank-tax-row ${u.paid?'is-paid':'is-open'}">
+   <input type="checkbox" data-tax-check data-user-id="${u.user_id}" ${u.paid?'checked':''} aria-label="${esc(u.handle)}: Steuer bezahlt">
+   <span class="bank-tax-details"><strong>${esc(u.handle)}</strong><small>${u.still_member?'Aktives Clanmitglied':'Clan verlassen · historischer Eintrag'}</small></span>
+   <span class="bank-tax-status">${u.paid?'✓ Bezahlt':'Offen'}</span>
+   <small class="bank-tax-meta">${u.updated_by?'Von '+esc(u.updated_by):'Noch nicht bestätigt'}${u.updated_at?' · '+date(u.updated_at):''}</small>
+  </label>`).join('');
+  return `<section class="bank-tax-group" data-tax-clan="${clan}" aria-label="${heading}">
+   <div class="bank-tax-group-head">
+    <h4>${heading}</h4>
+    <div class="bank-tax-group-count"><strong>${paid}</strong> bezahlt · <strong>${unpaid}</strong> offen · ${rows.length} Mitglieder</div>
+   </div>
+   <div class="bank-tax-group-members">${items||'<div class="bank-tax-group-empty">Für diesen Monat sind noch keine Clanmitglieder erfasst.</div>'}</div>
+  </section>`;
+ }).join('');
 }
 async function updateMonthlyTax(input){
  if(!taxStaff()||!state.taxes)return;
