@@ -5,6 +5,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const net = require('node:net');
 const {backupDb,settings:backupSettings} = require('./backup');
+const {legalPage}=require('./legal-pages');
+const {initLegalNotices}=require('./legal-notices');
 const { DatabaseSync } = require('node:sqlite');
 const { initClanHQ } = require('./clan-hq');
 const { initClanBank } = require('./clan-bank');
@@ -212,9 +214,11 @@ db.prepare('DELETE FROM events WHERE is_demo=1').run();
 function respondError(res,e){console.error(e.status?'':'Server error',e.status?'':e);json(res,e.status||500,{error:e.status?e.message:'Interner Serverfehler'});}
 const clanHQ = initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,now});
 const clanBank = initClanBank({db,json,readBody,errors,requireUser,checkRate,now});
+const legalNotices = initLegalNotices({db,json,readBody,errors,requireStaff,checkRate,now});
 async function api(req,res,url) {
  const p=url.pathname, method=req.method, viewer=currentUser(req);
  if(method!=='GET') ensureOrigin(req);
+ if(p==='/api/content-notices'||p==='/api/admin/content-notices'||p==='/api/admin/content-notices/review')return legalNotices.api(req,res,url);
  if(p.startsWith('/api/hq/bank'))return clanBank.api(req,res,url);
  if(p.startsWith('/api/hq/'))return clanHQ.api(req,res,url,viewer);
  if(p==='/api/health'&&method==='GET')return json(res,200,{ok:true,service:'NoMercy Hub'});
@@ -449,6 +453,16 @@ function staticFile(req,res,url){
  if(req.method!=='GET')return json(res,405,{error:'Methode nicht erlaubt'});
  let p;try{p=decodeURIComponent(url.pathname);}catch{return json(res,400,{error:'Ungültige URL'});}
  if(p==='/')p='/index.html';
+ // Legal pages stay unavailable until the data and the reviewed texts are complete.
+ // Contact details live only in Railway variables, never Git history.
+ if(p==='/impressum.html'||p==='/datenschutz.html'){
+  const rendered=legalPage(p);
+  if(!rendered)return json(res,503,{error:'Rechtliche Angaben werden vorbereitet.'});
+  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store',
+   'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY',
+   'Content-Security-Policy':"default-src 'self'; style-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"});
+  return res.end(rendered);
+ }
  const full=path.resolve(ROOT,'public','.'+p); const base=path.resolve(ROOT,'public');
  if(!full.startsWith(base+path.sep))return json(res,403,{error:'Nicht erlaubt'});
  fs.readFile(full,(err,data)=>{if(err)return json(res,404,{error:'Datei nicht gefunden'});
