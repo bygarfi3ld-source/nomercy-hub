@@ -3,6 +3,8 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const net = require('node:net');
+const {backupDb,settings:backupSettings} = require('./backup');
 const { DatabaseSync } = require('node:sqlite');
 const { initClanHQ } = require('./clan-hq');
 const { initClanBank } = require('./clan-bank');
@@ -127,13 +129,25 @@ const eventTypes = ['FFA', 'Baseraid', 'Turnier', 'Lootdrop', 'Bauevent', 'Commu
 const dimensions = ['Overworld', 'Nether', 'End', 'Andere'];
 const rateMap = new Map();
 const SESSION_MS = 7 * 24 * 3600000;
+function clientAddress(req) {
+ // Railway's HTTPS ingress replaces X-Real-IP. Never trust client-supplied proxy
+ // headers outside Railway production; local test/dev traffic uses the peer IP.
+ const real=req.headers['x-real-ip'];
+ if(process.env.NODE_ENV==='production'&&process.env.RAILWAY_ENVIRONMENT_ID&&
+    typeof real==='string'&&net.isIP(real))return real;
+ return req.socket.remoteAddress||'unknown';
+}
 function checkRate(req, key, limit=20, period=60000) {
- const id = (req.socket.remoteAddress || 'unknown') + ':' + key;
+ const id = clientAddress(req) + ':' + key;
  const t = Date.now(); let a = rateMap.get(id) || [];
  a = a.filter(x => x > t - period);
  if (a.length >= limit) throw errors(429, 'Zu viele Anfragen. Bitte später erneut versuchen.');
  a.push(t); rateMap.set(id, a);
- if (rateMap.size > 5000) rateMap.clear();
+ if(rateMap.size>5000){
+  // Never erase all limits under a flood. Remove only fully expired buckets.
+  for(const [other,history] of rateMap)if(history.at(-1)<=t-3600000)rateMap.delete(other);
+  if(rateMap.size>6000)throw errors(429,'Zu viele Anfragen. Bitte später erneut versuchen.');
+ }
 }
 function cookieGet(req, name) {
  const cookie = req.headers.cookie || '';
@@ -161,7 +175,12 @@ function audit(staff, action, eventId, reportId, before, after, note='') {
  db.prepare('INSERT INTO moderation_log(moderator_id,event_id,report_id,action,previous_value,new_value,note,created_at) VALUES(?,?,?,?,?,?,?,?)')
   .run(staff.id,eventId??null,reportId??null,action,before??null,after??null,note,now());
 }
-function json(res,status,data, extra={}) {res.writeHead(status, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff',...extra});res.end(JSON.stringify(data));}
+function json(res,status,data, extra={}) {
+ res.writeHead(status, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',
+  'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Frame-Options':'DENY',
+  ...(process.env.NODE_ENV==='production'?{'Strict-Transport-Security':'max-age=31536000'}:{}),...extra});
+ res.end(JSON.stringify(data));
+}
 function setSession(res,u) {
  const token=crypto.randomBytes(32).toString('hex');
  db.prepare('INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(?,?,?)').run(crypto.createHash('sha256').update(token).digest('hex'),u.id, Date.now()+SESSION_MS);
@@ -170,8 +189,19 @@ function setSession(res,u) {
 function passwordHash(pass, salt) {return crypto.pbkdf2Sync(pass, Buffer.from(salt,'hex'),210000,32,'sha256').toString('hex');}
 function bounded(v,n=200) {return typeof v==='string'? v.trim().slice(0,n):'';}
 function isoInRange(x, min, max) { if(typeof x!=='string')return false;const d=Date.parse(x);return Number.isFinite(d) && d>=min && d<=max; }
-async function readBody(req){return await new Promise((resolve,reject)=>{let b=''; req.on('data',c=>{b+=c;if(b.length>16384){reject(errors(413,'Anfrage zu groß'));req.destroy();}});req.on('end',()=>{try{resolve(JSON.parse(b||'{}'));}catch{reject(errors(400,'Ungültiges JSON'));}});req.on('error',reject);});}
-function ensureOrigin(req){const origin=req.headers.origin; if(origin){try{const u=new URL(origin);if(u.host!==req.headers.host)throw errors(403,'Nicht erlaubter Ursprung');}catch{throw errors(403,'Nicht erlaubter Ursprung');}}}
+async function readBody(req){return await new Promise((resolve,reject)=>{let b='';req.on('data',c=>{b+=c;if(b.length>16384){reject(errors(413,'Anfrage zu groß'));req.destroy();}});req.on('end',()=>{
+  try{const parsed=JSON.parse(b||'{}');if(!parsed||Array.isArray(parsed)||typeof parsed!=='object')throw Error('Invalid body');resolve(parsed);}
+  catch{reject(errors(400,'Ungültiges JSON-Objekt'));}
+ });req.on('error',reject);});}
+function ensureOrigin(req){
+ // Reject browser cross-site attempts even if they omit Origin.
+ if(req.headers['sec-fetch-site']==='cross-site')throw errors(403,'Nicht erlaubter Ursprung');
+ const origin=req.headers.origin;
+ if(origin){
+  try{const u=new URL(origin);if(!['http:','https:'].includes(u.protocol)||u.host!==req.headers.host)throw Error('Cross-site origin');}
+  catch{throw errors(403,'Nicht erlaubter Ursprung');}
+ }
+}
 const eventSelect = `SELECT e.*, u.handle AS creator_handle,
  (SELECT COUNT(*) FROM registrations r WHERE r.event_id=e.id) AS participants
  FROM events e LEFT JOIN users u ON u.id=e.creator_id`;
@@ -225,6 +255,7 @@ async function api(req,res,url) {
   if(!/^[A-Za-z0-9_]{3,20}$/.test(handle))throw errors(400,'Hub-Name: 3–20 Zeichen, nur Buchstaben, Zahlen und _.');
   if(pass.length<10||pass.length>128)throw errors(400,'Passwort muss zwischen 10 und 128 Zeichen haben.');
   const salt=crypto.randomBytes(16).toString('hex');let u;
+  if(db.prepare('SELECT 1 FROM users WHERE handle=? COLLATE NOCASE').get(handle))throw errors(409,'Dieser Hub-Name ist bereits vergeben.');
   try{const r=db.prepare('INSERT INTO users(handle,password_hash,salt,created_at) VALUES(?,?,?,?)').run(handle,passwordHash(pass,salt),salt,now());u={id:Number(r.lastInsertRowid),handle,role:'member'};}
   catch(e){if(e.message.includes('UNIQUE'))throw errors(409,'Dieser Hub-Name ist bereits vergeben.'); throw e;}
   return json(res,201,{user:u,notice:'Hub-Account erstellt. Minecraft-Identität ist NICHT verifiziert.'},{'Set-Cookie':setSession(res,u)});
@@ -416,7 +447,8 @@ async function api(req,res,url) {
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'application/javascript; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.ico':'image/x-icon'};
 function staticFile(req,res,url){
  if(req.method!=='GET')return json(res,405,{error:'Methode nicht erlaubt'});
- let p=decodeURIComponent(url.pathname); if(p==='/')p='/index.html';
+ let p;try{p=decodeURIComponent(url.pathname);}catch{return json(res,400,{error:'Ungültige URL'});}
+ if(p==='/')p='/index.html';
  const full=path.resolve(ROOT,'public','.'+p); const base=path.resolve(ROOT,'public');
  if(!full.startsWith(base+path.sep))return json(res,403,{error:'Nicht erlaubt'});
  fs.readFile(full,(err,data)=>{if(err)return json(res,404,{error:'Datei nicht gefunden'});
@@ -425,3 +457,24 @@ function staticFile(req,res,url){
 }
 const server=http.createServer(async(req,res)=>{try{if(req.url==='/healthz' && req.method==='GET'){res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});return res.end(JSON.stringify({ok:true}));}if(protectedPreview(req,res))return;const u=new URL(req.url,'http://localhost');if(u.pathname.startsWith('/api/'))await api(req,res,u);else staticFile(req,res,u);}catch(e){respondError(res,e);}});
 server.listen(PORT,HOST,()=>console.log(`NoMercy Hub: http://${HOST}:${PORT}`));
+// Production backups are encrypted client-side, stored in a separate private
+// S3-compatible Railway bucket, downloaded and integrity-checked after upload.
+if(process.env.NODE_ENV==='production'){
+ try{
+  const configured=backupSettings();
+  if(configured){
+   let busy=false;
+   const backupRun=async()=>{
+    if(busy)return;busy=true;
+    try{
+     const report=await backupDb(dbFile);
+     console.log('[NoMercy] Encrypted off-volume backup verified: '+report.key+' ('+report.users+' users, '+report.sizeBytes+' bytes).');
+    }catch(err){console.error('[NoMercy] SECURITY BACKUP ERROR: '+err.message);}
+    finally{busy=false;}
+   };
+   setTimeout(backupRun,20000).unref();
+   setInterval(backupRun,6*3600000).unref();
+  }else console.warn('[NoMercy] WARNING: Off-volume backup is not configured.');
+ }catch(err){console.error('[NoMercy] BACKUP CONFIGURATION ERROR: '+err.message);}
+}
+
