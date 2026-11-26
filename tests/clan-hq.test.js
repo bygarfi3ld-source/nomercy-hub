@@ -176,3 +176,78 @@ test('Upgrade von V0.7 markiert vorhandene Giveaways standardmäßig als privat'
   assert.equal(restored.data.giveaway.visibility,'clan');
  }finally{if(srv)await stop(srv);rmSync(dir,{recursive:true,force:true});}
 });
+
+test('Admin can remove a departed member: private access, roles and open entries revoked, account retained', {timeout:30000}, async()=>{
+ const dir=mkdtempSync(path.join(tmpdir(),'nomercy-remove-'));let srv;
+ try{
+  srv=await boot(dir);const url=srv.url;
+  const admin=await register(url,'RemoveAdmin');
+  const former=await register(url,'FormerMember');
+  const mod=await register(url,'FormerMod');
+  const planner=await register(url,'FormerEvent');
+  assert.equal((await response(url,'/api/admin/claim',{token:secret},admin)).status,200);
+  assert.equal((await response(url,'/api/hq/clan/requests',{
+   mc_name:'FormerMember',desired_clan:'clan3',message:'Clan Bewerbung',request_type:'application'
+  },former)).status,201);
+  const pending=(await response(url,'/api/hq/clan/requests',undefined,admin)).data.requests;
+  const requestId=pending.find(x=>x.handle==='FormerMember').id;
+  assert.equal((await response(url,'/api/hq/clan/requests/'+requestId+'/review',{
+   decision:'approve',clan:'clan3',note:'Mitglied bestätigt'
+  },admin)).status,200);
+  for(const name of ['FormerMod','FormerEvent'])
+   assert.equal((await response(url,'/api/hq/clan/members',{handle:name,clan:'clan2'},admin)).status,200);
+  assert.equal((await response(url,'/api/admin/team',{handle:'FormerMod',role:'moderator'},admin)).status,200);
+  assert.equal((await response(url,'/api/admin/team',{handle:'FormerEvent',role:'event_manager'},admin)).status,200);
+  const giveaway=await response(url,'/api/hq/giveaways',{
+   title:'Private test',description:'Only clan',visibility:'clan',prize_kind:'item',
+   prize_detail:'Diamond',prize_amount:1,winner_count:1,ends_at:new Date(Date.now()+3600000).toISOString()
+  },admin);
+  assert.equal(giveaway.status,201,JSON.stringify(giveaway.data));
+  const gid=giveaway.data.id;
+  for(const cookie of [former,mod,planner])
+   assert.equal((await response(url,'/api/hq/giveaways/'+gid+'/enter',{},cookie)).data.entered,true);
+  const event=await response(url,'/api/hq/events',{
+   title:'Internal event',description:'Clan only',category:'FFA',
+   starts_at:new Date(Date.now()+7200000).toISOString(),duration_minutes:45,max_players:15
+  },admin);
+  assert.equal(event.status,201,JSON.stringify(event.data));
+  const eid=event.data.id;
+  for(const cookie of [former,mod,planner])
+   assert.equal((await response(url,'/api/hq/events/'+eid+'/join',{},cookie)).status,200);
+  assert.equal((await response(url,'/api/hq/clan/members',{handle:'FormerMember',clan:'remove'},mod)).status,403,'Only admin can remove');
+  assert.equal((await response(url,'/api/hq/clan/members',{handle:'RemoveAdmin',clan:'remove'},admin)).status,403,'Cannot remove owner');
+  for(const [name,cookie] of [['FormerMember',former],['FormerMod',mod],['FormerEvent',planner]]){
+   assert.equal((await response(url,'/api/hq/clan/members',{handle:name,clan:'remove'},admin)).status,200);
+   assert.equal((await response(url,'/api/hq/me',undefined,cookie)).data.user.clan,null);
+   assert.equal((await response(url,'/api/hq/events',undefined,cookie)).status,403);
+   assert.equal((await response(url,'/api/hq/bank',undefined,cookie)).status,403);
+   assert.equal((await response(url,'/api/hq/giveaways/'+gid,undefined,cookie)).status,404);
+   assert.equal((await response(url,'/api/hq/giveaways/'+gid+'/enter',{},cookie)).status,403);
+   assert.equal((await response(url,'/api/hq/events/'+eid+'/join',{},cookie)).status,403);
+   assert.equal((await response(url,'/api/me',undefined,cookie)).data.user.handle,name,'Account remains');
+   assert.equal((await response(url,'/api/hq/clan/members',{handle:name,clan:'remove'},admin)).status,409,'No duplicate remove');
+  }
+  assert.equal((await response(url,'/api/hq/mod/market',undefined,mod)).status,403,'Moderator role revoked');
+  assert.equal((await response(url,'/api/hq/events',{
+   title:'Not permitted',description:'No access',category:'FFA',
+   starts_at:new Date(Date.now()+7200000).toISOString(),duration_minutes:45,max_players:15
+  },planner)).status,403,'Event manager role revoked');
+  assert.equal((await response(url,'/api/hq/giveaways/'+gid,undefined,admin)).data.giveaway.entries,0,'Open private entries removed');
+  const events=(await response(url,'/api/hq/events',undefined,admin)).data.events;
+  assert.equal(events.find(x=>x.id===eid).participants,0,'Open event joins removed');
+  const roster=(await response(url,'/api/hq/clan/roster')).data.members;
+  for(const handle of ['FormerMember','FormerMod','FormerEvent'])assert.ok(!roster.some(x=>x.handle===handle));
+  const reviewed=(await response(url,'/api/hq/clan/requests',undefined,former)).data.request;
+  assert.equal(reviewed.status,'rejected','Former approval no longer blocks return forever');
+  const history=(await response(url,'/api/hq/mod/audit',undefined,admin)).data.history;
+  assert.ok(history.some(x=>x.action==='clan_member_removed'&&x.details.includes('FormerMember')));
+ }finally{if(srv)await stop(srv);rmSync(dir,{force:true,recursive:true});}
+});
+test('Admin member cards expose a confirmed remove button for all clan ranks',()=>{
+ const fs=require('node:fs');
+ const js=fs.readFileSync(path.join(__dirname,'../public/hq.js'),'utf8');
+ assert.match(js,/data-clan-remove/);
+ assert.match(js,/clan:'remove'/);
+ assert.match(js,/wirklich aus NoMercy entfernen/);
+ assert.match(js,/loadTeam\(\),loadRoster\(\)/);
+});

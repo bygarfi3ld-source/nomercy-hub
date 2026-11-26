@@ -231,20 +231,36 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    postOnly(m);const staff=requireStaff(req,true);checkRate(req,'hq-members',20,3600000);
    const b=await readBody(req),handle=clean(b.handle,20),clan=b.clan;
    if(!/^[A-Za-z0-9_]{3,20}$/.test(handle)||!['main','clan2','clan3','remove'].includes(clan))fail('Hub-Benutzername und Clan auswählen.');
-   const target=db.prepare('SELECT id FROM users WHERE handle=?').get(handle);
+   const target=db.prepare('SELECT id,role FROM users WHERE handle=?').get(handle);
    if(!target)throw errors(404,'Hub-Konto nicht gefunden.');
+   // Removing clan membership does not delete the Hub account, but must revoke all private privileges.
+   // Protect the owner account from accidental self-lockout.
+   if(clan==='remove'&&target.role==='admin')throw errors(403,'Admin-Konten können hier nicht aus dem Clan entfernt werden.');
    runAtomic(()=>{
     const current=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(target.id)?.clan||null;
+    if(clan==='remove'&&!current)throw errors(409,'Dieses Konto hat keinen aktiven Clan-Zugang.');
     // Main is earned, never granted through a first-time application or direct assignment.
     // Admins may promote Clan 3 → Clan 2 → Main. Existing Main members are unchanged.
     if(clan==='main'&&current!=='clan2'&&current!=='main')
      throw errors(409,'Main Clan ist nur durch Beförderung aus Clan 2 erreichbar. Erst im Clan hocharbeiten.');
-    if(clan==='remove')db.prepare('DELETE FROM clan_memberships WHERE user_id=?').run(target.id);
-    else db.prepare(`INSERT INTO clan_memberships(user_id,clan,approved_by,approved_at) VALUES(?,?,?,?)
+    if(clan==='remove'){
+     db.prepare('DELETE FROM clan_memberships WHERE user_id=?').run(target.id);
+     // A former member must not keep moderation or event-team capabilities.
+     if(['moderator','event_manager'].includes(target.role))
+      db.prepare("UPDATE users SET role='member' WHERE id=?").run(target.id);
+     // Remove ongoing private entries; completed historical giveaway results remain unchanged.
+     db.prepare(`DELETE FROM clan_giveaway_entries WHERE user_id=? AND giveaway_id IN
+       (SELECT id FROM clan_giveaways WHERE visibility='clan' AND status='open')`).run(target.id);
+     db.prepare(`DELETE FROM clan_event_joins WHERE user_id=? AND event_id IN
+       (SELECT id FROM clan_events WHERE status='open' AND ends_at>?)`).run(target.id,now());
+     // Previously approved applications must not block a future, manually reviewed return.
+     db.prepare(`UPDATE clan_join_requests SET status='rejected',updated_at=?,reviewed_by=?,review_note=?
+       WHERE user_id=? AND status='approved'`).run(now(),staff.id,'Clan-Zugang durch die Clanleitung beendet.',target.id);
+    }else db.prepare(`INSERT INTO clan_memberships(user_id,clan,approved_by,approved_at) VALUES(?,?,?,?)
      ON CONFLICT(user_id) DO UPDATE SET clan=excluded.clan,approved_by=excluded.approved_by,approved_at=excluded.approved_at`).run(target.id,clan,staff.id,now());
     if(clan!=='remove')db.prepare(`UPDATE clan_join_requests SET status='approved',updated_at=?,reviewed_by=?,review_note=?
       WHERE user_id=? AND status='pending'`).run(now(),staff.id,'Manuell durch Clanleitung freigeschaltet.',target.id);
-    audit(staff,(current==='clan3'&&clan==='clan2')||(current==='clan2'&&clan==='main')?'clan_member_promotion':'clan_member',target.id,`${handle}: ${current||'ohne Clan'} -> ${clan}`);
+    audit(staff,clan==='remove'?'clan_member_removed':(current==='clan3'&&clan==='clan2')||(current==='clan2'&&clan==='main')?'clan_member_promotion':'clan_member',target.id,`${handle}: ${current||'ohne Clan'} -> ${clan}${clan==='remove'?' (private Rechte entzogen)':''}`);
    });
    return json(res,200,{ok:true});
   }

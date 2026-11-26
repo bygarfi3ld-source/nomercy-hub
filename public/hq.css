@@ -659,3 +659,9 @@ body[data-section]:not([data-section='market']) .memberbar{margin-bottom:21px}
  .skeleton-row .skeleton-line.short{max-width:25%}
 }
 @media(prefers-reduced-motion:reduce){.skeleton-avatar:before,.skeleton-line:before,.skeleton-block:before{animation:none!important}}
+
+/* Clearly visible, deliberate departure control in every Admin member card. */
+#memberList .tile{display:flex;flex-direction:column;align-items:flex-start;gap:11px}
+#memberList .tile .clan-remove-btn{margin-top:auto;border-color:#deb3b8;background:#fff9f9;color:#9b3341;font-weight:800;min-height:42px}
+#memberList .tile .clan-remove-btn:hover{background:#ffedef;border-color:#cb7582;color:#772330}
+#memberList .tile .clan-remove-btn:focus-visible{outline:2px solid #c75f70;outline-offset:2px}
