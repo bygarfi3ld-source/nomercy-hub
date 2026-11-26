@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const date=x=>new Date(x).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-const state={user:null,market:[],events:[],giveaways:[],members:[],roster:[],teamRoles:[],reports:[],bank:null,taxes:null,tab:'market'};
+const state={user:null,market:[],events:[],giveaways:[],members:[],roster:[],teamRoles:[],reports:[],bank:null,taxes:null,missions:[],tab:'market'};
 let toastTimeout,spinCancelled=false,spinActive=false,spinSkip=false;
 const staff=()=>['admin','coleader','moderator'].includes(state.user?.role);
 const clanLeader=()=>['admin','coleader'].includes(state.user?.role);
@@ -11,6 +11,7 @@ const taxStaff=()=>staff();
 const eventCreator=()=>staff()||state.user?.role==='event_manager';
 const member=()=>!!state.user?.clan;
 const eventMember=()=>member()||state.user?.role==='event_manager';
+const missionEligible=()=>staff()||['main','clan2','clan3'].includes(state.user?.clan);
 const bankEligible=()=>state.user?.role==='admin'||['main','clan2','clan3'].includes(state.user?.clan);
 const money=x=>(Number(x)/1000).toLocaleString('de-DE',{maximumFractionDigits:3});
 const labelClan={main:'👑 Main Clan',clan2:'⚔ Clan 2',clan3:'🛡 Clan 3',staff:'🛡 Clan-Team'};
@@ -30,11 +31,12 @@ const authHTML=(register=false)=>`<form class="form" id="authForm">
  <button class="textlink" type="button" id="switchAuth">${register?'Schon ein Konto? Anmelden':'Neu hier? Hub-Konto erstellen'}</button>
  <small>Eigenes Hub-Passwort verwenden – niemals Minecraft- oder Microsoft-Zugangsdaten. Minecraft-Namen sind nicht verifiziert.</small></form>`;
 function showAuth(register=false){modal(register?'Konto erstellen':'Anmelden',authHTML(register),'HUB ACCOUNT');$('#switchAuth').onclick=()=>showAuth(!register);
- $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();if(state.tab==='apply')await loadApplication();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
+ $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();if(state.tab==='apply')await loadApplication();if(state.tab==='missions')await loadMissions();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
 function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.handle} ↗`:'Anmelden';$('#existingAccessBtn').hidden=!!u?.clan;$('#existingAccessBtn').textContent=u?'✓ Zugang bestätigen':'✓ Schon im Clan?';
  $$('.staff-action').forEach(x=>x.hidden=!staff());$$('.event-action').forEach(x=>x.hidden=!eventCreator());$('#moderationNav').hidden=!staff();$('#membersNav').hidden=!staff();
  $('#memberManagement').hidden=!clanLeader();$('#approvedMembersPanel').hidden=!clanLeader();$('#teamRolesPanel').hidden=u?.role!=='admin';$('#clanApplicationsPanel').hidden=!clanLeader();
  $('#bankTaxPanel').hidden=!taxStaff();$('#bankTaxJump').hidden=!taxStaff();
+ $('#newMissionBtn').hidden=!staff();
  $('#membersPanel').setAttribute('aria-label','Clan-Team – nur für berechtigte Teammitglieder');
  $('#bankTransactionBtn').hidden=u?.role!=='admin';$('#bankRequestBtn').hidden=!bankEligible();
  $('#memberbar').textContent=!u?'Marktplatz für alle · Öffentliche Giveaways mit Hub-Konto · Clan-Events nur mit Freigabe.':
@@ -56,6 +58,7 @@ async function syncApprovedAccess(){
    await loadPrivate();
    if(state.tab==='apply')await loadApplication();
    if(state.tab==='bank')await loadBank();
+   if(state.tab==='missions')await loadMissions();
    if(!oldClan&&state.user?.clan)toast('✓ Dein Clan-Zugang ist jetzt freigeschaltet!');
   }
  })();
@@ -172,7 +175,7 @@ function renderPrivate(){
  <div class="actions">${live?`<button class="btn ${e.joined?'outline':'primary'}" data-event="join" data-id="${e.id}">${e.joined?'✓ Abmelden':'Teilnehmen'}</button>`:'<button class="btn outline" disabled>Beendet</button>'}${(staff()||(state.user?.role==='event_manager'&&e.is_owner))&&live?`<button class="btn outline" data-event="close" data-id="${e.id}">Schließen</button>`:''}</div></article>`;
  }).join(''):'<div class="empty"><strong>Noch keine Clan-Events geplant.</strong>Noch keine Termine eingetragen.</div>';
 }
-const sectionNames={market:'Marktplatz',giveaways:'Giveaways',events:'Clan-Events',roster:'Mitglieder',apply:'Bewerben',bank:'Clanbank',members:'Clan-Team'};
+const sectionNames={market:'Marktplatz',giveaways:'Giveaways',events:'Clan-Events',missions:'Clan-Aufträge',roster:'Mitglieder',apply:'Bewerben',bank:'Clanbank',members:'Clan-Team'};
 // A real navigation state: the large home hero must not obscure inner pages.
 function showSection(tab){
  if(!Object.hasOwn(sectionNames,tab))tab='market';
@@ -197,7 +200,85 @@ async function setTab(tab,{historyMode='push',resetScroll=true}={}){
  // Reset the viewport immediately; users should never remain above an invisible subpage.
  if(resetScroll)window.scrollTo({top:0,behavior:'auto'});
  await syncApprovedAccess();
- if(tab==='members'&&staff())await loadTeam();if(tab==='roster')await loadRoster();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();
+ if(tab==='members'&&staff())await loadTeam();if(tab==='roster')await loadRoster();if(tab==='missions')await loadMissions();if(tab==='apply')await loadApplication();if(tab==='bank')await loadBank();if(['events','giveaways'].includes(tab))await loadPrivate();
+}
+const missionClans={all:'Alle drei Clans',main:'👑 Mainclan',clan2:'⚔ 2. Clan',clan3:'🛡 3. Clan'};
+const missionClaimNames={joined:'Übernommen',submitted:'Wartet auf Bestätigung',approved:'✓ Bestätigt',withdrawn:'Zurückgegeben'};
+async function loadMissions(){
+ const gate=$('#missionGate'),list=$('#missionList');
+ if(!missionEligible()){
+  state.missions=[];gate.hidden=false;list.innerHTML='';finishSkeleton('#missionList');
+  $('#missionSummary').textContent='Clan-Aufträge sind nur für freigeschaltete Mitglieder sichtbar.';
+  return;
+ }
+ gate.hidden=true;setSkeleton('#missionList',3);
+ try{
+  const {missions}=await api('/api/hq/missions');
+  state.missions=Array.isArray(missions)?missions:[];
+  renderMissions();finishSkeleton('#missionList');
+ }catch(e){loadingError('#missionList',e.message);$('#missionSummary').textContent='Aufträge konnten nicht geladen werden.';throw e;}
+}
+function renderMissions(){
+ const filter=$('#missionFilter').value;
+ const current=state.missions.filter(m=>m.status==='open'&&(!m.due_at||Date.parse(m.due_at)>Date.now()));
+ const chosen=state.missions.filter(m=>{
+  if(filter==='open')return current.includes(m);
+  if(filter==='mine')return !!m.my_status&&m.my_status!=='withdrawn';
+  if(filter==='closed')return m.status==='closed'||(m.due_at&&Date.parse(m.due_at)<=Date.now());
+  return true;
+ });
+ $('#missionSummary').innerHTML='<strong>'+current.length+' offen</strong> · '+state.missions.filter(m=>['joined','submitted'].includes(m.my_status)).length+' von dir übernommen · '+state.missions.length+' im Hub';
+ $('#missionList').innerHTML=chosen.length?chosen.map(m=>{
+  const active=m.status==='open'&&(!m.due_at||Date.parse(m.due_at)>Date.now());
+  const clanOk=['main','clan2','clan3'].includes(state.user?.clan)&&
+   (m.clan_scope==='all'||m.clan_scope===state.user.clan);
+  const myStatus=m.my_status;
+  const canJoin=active&&clanOk&&(!myStatus||myStatus==='withdrawn')&&m.participants<m.slots;
+  const controls=[
+   canJoin?'<button type="button" class="btn primary" data-mission="join" data-id="'+m.id+'">Auftrag übernehmen</button>':'',
+   myStatus==='joined'&&active?'<button type="button" class="btn primary" data-mission="submit" data-id="'+m.id+'">✓ Erledigung melden</button>':'',
+   myStatus==='joined'?'<button type="button" class="btn outline" data-mission="leave" data-id="'+m.id+'">Zurückgeben</button>':'',
+   staff()&&m.status==='open'?'<button type="button" class="btn outline" data-mission="close" data-id="'+m.id+'">Auftrag schließen</button>':''
+  ].filter(Boolean).join('');
+  const claims=staff()&&m.claims?.length?`<div class="mission-claims"><strong>Teilnehmer & Prüfung</strong>${m.claims.map(c=>`<div class="mission-claim"><div><b>${esc(c.handle)}</b> <span class="mission-claim-state">${esc(missionClaimNames[c.status]||c.status)}</span>${c.note?`<p>${esc(c.note)}</p>`:''}${c.review_note?`<small>Team-Rückmeldung: ${esc(c.review_note)}</small>`:''}</div>${c.status==='submitted'&&c.user_id!==state.user?.id?`<div class="mission-claim-actions"><button type="button" class="btn primary" data-mission="approve" data-id="${m.id}" data-user-id="${c.user_id}">Bestätigen</button><button type="button" class="btn outline" data-mission="revise" data-id="${m.id}" data-user-id="${c.user_id}">Zurück zur Bearbeitung</button></div>`:''}</div>`).join('')}</div>`:'';
+  return `<article class="mission-card">
+   <div class="mission-topline"><span class="pill ${active?'red':'dark'}">${active?'● OFFEN':m.status==='closed'?'GESCHLOSSEN':'FRIST ABGELAUFEN'}</span><span class="mission-scope">${esc(missionClans[m.clan_scope]||m.clan_scope)}</span></div>
+   <h3>${esc(m.title)}</h3><p class="mission-description">${esc(m.description)}</p>
+   <div class="mission-meta"><span><strong>${m.participants} / ${m.slots}</strong> Plätze belegt</span><span><strong>${m.completed}</strong> bestätigt</span>${m.due_at?`<span>Frist: ${date(m.due_at)} Uhr</span>`:''}</div>
+   <small class="mission-created">Erstellt von ${esc(m.creator_handle)} · ${date(m.created_at)}</small>
+   ${myStatus&&myStatus!=='withdrawn'?`<p class="mission-my-state">${esc(missionClaimNames[myStatus]||myStatus)}${m.my_review_note?' · Team: '+esc(m.my_review_note):''}</p>`:''}
+   ${controls?'<div class="actions">'+controls+'</div>':''}
+   ${claims}
+  </article>`;
+ }).join(''):'<div class="empty"><strong>Hier gibt es noch keine passenden Aufträge.</strong>Wechsle den Filter oder öffne später erneut das Schwarze Brett der Crew.</div>';
+}
+function showMissionForm(){
+ if(!staff())return toast('Nur Clanleitung und Mods können Aufträge erstellen.');
+ modal('Neuen Clan-Auftrag erstellen',`<form class="form" id="missionCreateForm">
+  <label>Auftragstitel<input name="title" maxlength="100" required placeholder="z. B. 3 Stacks Obsidian sammeln"></label>
+  <label>Beschreibung / Ziel<textarea name="description" maxlength="1200" required placeholder="Was soll erledigt werden? Wie gebt ihr die Materialien ab?"></textarea></label>
+  <label>Für welchen Clan?<select name="clan_scope"><option value="all">Alle drei Clans</option><option value="main">👑 Mainclan</option><option value="clan2">⚔ 2. Clan</option><option value="clan3">🛡 3. Clan</option></select></label>
+  <label>Wie viele Mitglieder können mitmachen?<input name="slots" type="number" inputmode="numeric" min="1" max="30" step="1" value="5" required></label>
+  <label>Frist (optional)<input name="due_at" type="datetime-local"></label>
+  <div class="banner">Der Auftrag ist nur für freigeschaltete Clanmitglieder sichtbar. Erledigungen müssen durch das Team bestätigt werden. Keine automatische Auszahlung.</div>
+  <button class="btn primary full">Auftrag veröffentlichen</button></form>`,'CLAN / MISSIONEN');
+ $('#missionCreateForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{
+  const payload=formToObj(e.currentTarget);
+  payload.due_at=payload.due_at?localISO(payload.due_at):null;
+  await api('/api/hq/missions',payload);
+  closeModal();await loadMissions();toast('Auftrag veröffentlicht.');});};
+}
+function showMissionSubmitForm(id){
+ const m=state.missions.find(x=>x.id===id);
+ if(!m||m.my_status!=='joined')return;
+ modal('Erledigung einreichen',`<form class="form" id="missionSubmitForm">
+  <p><b>${esc(m.title)}</b></p>
+  <label>Was hast du erledigt?<textarea name="note" maxlength="400" required placeholder="z. B. 3 Stacks Obsidian an die Clanleitung übergeben."></textarea></label>
+  <div class="banner">Der Auftrag gilt erst nach Prüfung durch das Clan-Team als abgeschlossen.</div>
+  <button class="btn primary full">Zur Prüfung senden</button></form>`,'CLAN / ERLEDIGT');
+ $('#missionSubmitForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{
+  await api('/api/hq/missions/'+id+'/submit',formToObj(e.currentTarget));
+  closeModal();await loadMissions();toast('Erledigung wartet auf Team-Bestätigung.');});};
 }
 async function loadRoster(){
  const started=performance.now();
@@ -520,6 +601,27 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
   if(giveaway.dataset.giveaway==='fulfill')await withAction(async()=>{const note=askNote('Erst nach echter Übergabe: Welche Gewinne wurden im Spiel ausgehändigt?');if(!note)return;await api(`/api/hq/giveaways/${id}/fulfill`,{note});await loadPrivate();toast('Übergabe dokumentiert.');});
   if(giveaway.dataset.giveaway==='cancel')await withAction(async()=>{const note=askNote('Warum soll dieses Giveaway abgebrochen werden?');if(!note)return;await api(`/api/hq/giveaways/${id}/cancel`,{note});state.giveaways=state.giveaways.filter(x=>x.id!==id);$('#statGiveaways').textContent=state.giveaways.length;renderPrivate();await loadPrivate();toast('Giveaway abgebrochen und aus der Liste entfernt.');});return;
  }
+ const mission=e.target.closest('[data-mission]');if(mission){
+  const id=Number(mission.dataset.id),action=mission.dataset.mission;
+  if(action==='submit'){showMissionSubmitForm(id);return;}
+  await withAction(async()=>{
+   let body={};let endpoint=action;
+   if(action==='approve'||action==='revise'){
+    const note=askNote(action==='approve'?'Begründung für die Bestätigung:':'Warum muss der Auftrag überarbeitet werden?');
+    if(!note)return;
+    endpoint='review';body={user_id:Number(mission.dataset.userId),decision:action==='approve'?'approve':'revise',note};
+   }
+   if(action==='close'){
+    const note=askNote('Warum diesen Clan-Auftrag schließen?');
+    if(!note||!confirm('Auftrag wirklich schließen? Neue Übernahmen und Erledigungen sind dann nicht mehr möglich.'))return;
+    body={note};
+   }
+   if(action==='leave'&&!confirm('Auftrag wirklich zurückgeben?'))return;
+   mission.disabled=true;
+   try{await api('/api/hq/missions/'+id+'/'+endpoint,body);await loadMissions();toast(action==='join'?'Auftrag übernommen.':action==='submit'?'Erledigung gesendet.':action==='leave'?'Auftrag zurückgegeben.':action==='approve'?'Erledigung bestätigt.':action==='revise'?'Zur Überarbeitung zurückgegeben.':'Auftrag geschlossen.');}
+   finally{mission.disabled=false;}
+  });return;
+ }
  const ev=e.target.closest('[data-event]');if(ev){const id=Number(ev.dataset.id);
   if(ev.dataset.event==='join')await withAction(async()=>{await api(`/api/hq/events/${id}/join`,{});await loadPrivate();toast('Event-Teilnahme aktualisiert.');});
   if(ev.dataset.event==='close')await withAction(async()=>{const note=askNote('Warum das Event schließen?');if(!note)return;await api(`/api/hq/events/${id}/status`,{status:'closed',note});await loadPrivate();toast('Event geschlossen.');});return;
@@ -579,6 +681,7 @@ async function init(){
  $('#bankTaxRefresh').onclick=()=>withAction(loadMonthlyTaxes);
  document.addEventListener('change',e=>{const box=e.target.closest('input[data-tax-check]');if(box)void updateMonthlyTax(box);});
  $('#newListingBtn').onclick=showListingForm;$('#newGiveawayBtn').onclick=showGiveawayForm;$('#newEventBtn').onclick=showEventForm;
+ $('#newMissionBtn').onclick=showMissionForm;$('#missionReload').onclick=()=>withAction(loadMissions);$('#missionFilter').onchange=renderMissions;
  $('#marketFilter').onchange=renderMarket;$('#marketSearch').oninput=renderMarket;$('#marketReload').onclick=()=>withAction(loadMarket);
  $('#refreshClanApplicationsBtn').onclick=()=>withAction(loadTeam);
  $('#rosterSearch').oninput=renderRoster;$('#rosterFilter').onchange=renderRoster;$('#rosterRefresh').onclick=()=>withAction(loadRoster);

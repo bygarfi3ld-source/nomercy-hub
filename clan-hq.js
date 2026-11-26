@@ -69,7 +69,34 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    action TEXT NOT NULL,object_id INTEGER,details TEXT NOT NULL,created_at TEXT NOT NULL
  );
  CREATE INDEX IF NOT EXISTS idx_hq_giveaways_end ON clan_giveaways(ends_at,status);
- CREATE INDEX IF NOT EXISTS idx_hq_market_status ON market_listings(status,created_at);`);
+ CREATE INDEX IF NOT EXISTS idx_hq_market_status ON market_listings(status,created_at);
+ CREATE TABLE IF NOT EXISTS clan_missions (
+  id INTEGER PRIMARY KEY,
+  creator_id INTEGER NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  clan_scope TEXT NOT NULL CHECK(clan_scope IN ('all','main','clan2','clan3')),
+  slots INTEGER NOT NULL CHECK(slots BETWEEN 1 AND 30),
+  due_at TEXT,
+  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed')),
+  created_at TEXT NOT NULL,
+  closed_at TEXT,
+  closed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+ );
+ CREATE TABLE IF NOT EXISTS clan_mission_claims (
+  mission_id INTEGER NOT NULL REFERENCES clan_missions(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK(status IN ('joined','submitted','approved','withdrawn')),
+  note TEXT NOT NULL DEFAULT '',
+  review_note TEXT NOT NULL DEFAULT '',
+  joined_at TEXT NOT NULL,
+  submitted_at TEXT,
+  reviewed_at TEXT,
+  reviewed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  PRIMARY KEY(mission_id,user_id)
+ );
+ CREATE INDEX IF NOT EXISTS idx_mission_feed ON clan_missions(status,id DESC);
+ CREATE INDEX IF NOT EXISTS idx_mission_claims_status ON clan_mission_claims(mission_id,status);`);
  // Migrates existing V0.6/V0.7 giveaways safely: old entries stay clan-only.
  if(!db.prepare('PRAGMA table_info(clan_giveaways)').all().some(c=>c.name==='visibility')){
   db.exec("ALTER TABLE clan_giveaways ADD COLUMN visibility TEXT NOT NULL DEFAULT 'clan' CHECK(visibility IN ('clan','public'))");
@@ -249,6 +276,8 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
      throw errors(409,'Main Clan ist nur durch Beförderung aus Clan 2 erreichbar. Erst im Clan hocharbeiten.');
     if(clan==='remove'){
      db.prepare('DELETE FROM clan_memberships WHERE user_id=?').run(target.id);
+     // Withdraw unfinished missions without erasing completion history or evidence.
+     db.prepare("UPDATE clan_mission_claims SET status='withdrawn' WHERE user_id=? AND status IN ('joined','submitted')").run(target.id);
      // A former member must not keep moderation or event-team capabilities.
      if(['coleader','moderator','event_manager'].includes(target.role))
       db.prepare("UPDATE users SET role='member' WHERE id=?").run(target.id);
@@ -267,6 +296,108 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
     audit(staff,clan==='remove'?'clan_member_removed':(current==='clan3'&&clan==='clan2')||(current==='clan2'&&clan==='main')?'clan_member_promotion':'clan_member',target.id,`${handle}: ${current||'ohne Clan'} -> ${clan}${clan==='remove'?' (private Rechte entzogen)':''}`);
    });
    return json(res,200,{ok:true});
+  }
+
+  // Clan-Aufträge: no public access, no in-game payments; every state transition audited.
+  if(p==='/api/hq/missions'){
+   if(m==='GET'){
+    const u=requireUser(req),clan=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(u.id)?.clan||null;
+    if(!clan&&!isStaff(u))throw errors(403,'Clan-Aufträge sind nur für bestätigte Clanmitglieder und das Team.');
+    const rows=db.prepare(`SELECT t.*,creator.handle AS creator_handle,
+     (SELECT COUNT(*) FROM clan_mission_claims a WHERE a.mission_id=t.id AND a.status IN ('joined','submitted','approved')) AS participants,
+     (SELECT COUNT(*) FROM clan_mission_claims a WHERE a.mission_id=t.id AND a.status='approved') AS completed,
+     mine.status AS my_status,mine.note AS my_note,mine.review_note AS my_review_note
+     FROM clan_missions t JOIN users creator ON creator.id=t.creator_id
+     LEFT JOIN clan_mission_claims mine ON mine.mission_id=t.id AND mine.user_id=?
+     WHERE (?=1 OR t.clan_scope='all' OR t.clan_scope=?)
+     ORDER BY CASE t.status WHEN 'open' THEN 0 ELSE 1 END,t.id DESC LIMIT 100`).all(u.id,isStaff(u)?1:0,clan||'');
+    const missions=rows.map(({creator_id,closed_by,my_status,my_note,my_review_note,...t})=>{
+     const participants=isStaff(u)?db.prepare(`SELECT a.user_id,usr.handle,a.status,a.note,a.review_note,a.submitted_at,a.reviewed_at
+      FROM clan_mission_claims a JOIN users usr ON usr.id=a.user_id
+      WHERE a.mission_id=? AND a.status!='withdrawn' ORDER BY a.joined_at ASC LIMIT 50`).all(t.id):undefined;
+     return {...t,my_status:my_status||null,my_note:my_note||'',my_review_note:my_review_note||'',
+      ...(isStaff(u)?{claims:participants}:{})};
+    });
+    return json(res,200,{missions,is_staff:isStaff(u),my_clan:clan});
+   }
+   postOnly(m);const staff=requireStaff(req);checkRate(req,'hq-mission-create',12,3600000);
+   const b=await readBody(req);
+   const title=clean(b.title,100),description=clean(b.description,1200),scope=b.clan_scope,slots=Number(b.slots);
+   if(title.length<5||description.length<10||!['all','main','clan2','clan3'].includes(scope)||
+      !Number.isSafeInteger(slots)||slots<1||slots>30)fail('Titel (5+ Zeichen), Beschreibung (10+ Zeichen), Clan und Plätze angeben.');
+   const due=b.due_at?future(b.due_at,900000,90*86400000):null;
+   const id=runAtomic(()=>{
+    const created=Number(db.prepare(`INSERT INTO clan_missions(creator_id,title,description,clan_scope,slots,due_at,created_at)
+     VALUES(?,?,?,?,?,?,?)`).run(staff.id,title,description,scope,slots,due,now()).lastInsertRowid);
+    audit(staff,'clan_mission_created',created,`${title} [${scope}], Plätze: ${slots}`);
+    return created;
+   });
+   return json(res,201,{id});
+  }
+  const missionAction=p.match(/^\/api\/hq\/missions\/(\d+)\/(join|leave|submit|review|close)$/);
+  if(missionAction){
+   postOnly(m);const id=safeId(missionAction[1]),action=missionAction[2];
+   const u=requireUser(req);
+   checkRate(req,action==='join'?'hq-mission-join':'hq-mission-action',40,3600000);
+   const b=await readBody(req);
+   const isReview=['review','close'].includes(action);
+   if(isReview&&!isStaff(u))throw errors(403,'Nur Clanleitung und Moderation dürfen Aufträge prüfen oder schließen.');
+   const result=runAtomic(()=>{
+    const task=db.prepare('SELECT * FROM clan_missions WHERE id=?').get(id);
+    if(!task)throw errors(404,'Clan-Auftrag nicht gefunden.');
+    if(action==='close'){
+     if(task.status!=='open')throw errors(409,'Auftrag ist bereits geschlossen.');
+     const note=clean(b.note,400);if(note.length<5)fail('Bitte einen Grund für den Abschluss angeben.');
+     db.prepare("UPDATE clan_missions SET status='closed',closed_at=?,closed_by=? WHERE id=?").run(now(),u.id,id);
+     audit(u,'clan_mission_closed',id,note);
+     return {ok:true};
+    }
+    if(action==='review'){
+     if(!['approve','revise'].includes(b.decision))fail('Entscheidung fehlt.');
+     const note=clean(b.note,400);if(note.length<5)fail('Bitte eine kurze Begründung angeben.');
+     const target=safeId(b.user_id);
+     if(target===u.id)throw errors(403,'Eigene Aufgaben dürfen nicht selbst bestätigt werden.');
+     const claim=db.prepare("SELECT status FROM clan_mission_claims WHERE mission_id=? AND user_id=?").get(id,target);
+     if(!claim||claim.status!=='submitted')throw errors(409,'Nur eingereichte Aufträge können geprüft werden.');
+     if(b.decision==='approve'){
+      const member=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(target);
+      if(!member||(task.clan_scope!=='all'&&task.clan_scope!==member.clan))
+       throw errors(409,'Dieser Spieler ist nicht mehr für den Clan-Auftrag freigeschaltet.');
+     }
+     db.prepare(`UPDATE clan_mission_claims SET status=?,review_note=?,reviewed_at=?,reviewed_by=?
+      WHERE mission_id=? AND user_id=?`).run(b.decision==='approve'?'approved':'joined',note,now(),u.id,id,target);
+     audit(u,b.decision==='approve'?'clan_mission_approved':'clan_mission_revision',id,`Spieler #${target}: ${note}`);
+     return {ok:true};
+    }
+    const clan=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(u.id)?.clan||null;
+    if(!clan)throw errors(403,'Nur bestätigte Clanmitglieder können einen Auftrag übernehmen.');
+    if(task.clan_scope!=='all'&&task.clan_scope!==clan)throw errors(403,'Dieser Auftrag ist für einen anderen Clan.');
+    const current=db.prepare('SELECT status FROM clan_mission_claims WHERE mission_id=? AND user_id=?').get(id,u.id);
+    if(action==='leave'){
+     if(current?.status!=='joined')throw errors(409,'Nur übernommene Aufträge können zurückgegeben werden.');
+     db.prepare("UPDATE clan_mission_claims SET status='withdrawn' WHERE mission_id=? AND user_id=?").run(id,u.id);
+     audit(u,'clan_mission_left',id,'Auftrag zurückgegeben');
+     return {ok:true};
+    }
+    if(task.status!=='open'||(task.due_at&&task.due_at<=now()))throw errors(409,'Dieser Auftrag ist geschlossen oder abgelaufen.');
+    if(action==='join'){
+     if(current&&current.status!=='withdrawn')throw errors(409,'Du hast diesen Auftrag bereits übernommen.');
+     const participants=db.prepare("SELECT COUNT(*) AS n FROM clan_mission_claims WHERE mission_id=? AND status IN ('joined','submitted','approved')").get(id).n;
+     if(participants>=task.slots)throw errors(409,'Alle Plätze für diesen Auftrag sind vergeben.');
+     if(current)db.prepare(`UPDATE clan_mission_claims SET status='joined',note='',review_note='',joined_at=?,submitted_at=NULL,reviewed_at=NULL,reviewed_by=NULL
+      WHERE mission_id=? AND user_id=?`).run(now(),id,u.id);
+     else db.prepare(`INSERT INTO clan_mission_claims(mission_id,user_id,status,joined_at) VALUES(?,?,'joined',?)`).run(id,u.id,now());
+     audit(u,'clan_mission_joined',id,'Auftrag übernommen');
+     return {ok:true};
+    }
+    if(current?.status!=='joined')throw errors(409,'Bitte zuerst den Auftrag übernehmen.');
+    const note=clean(b.note,400);if(note.length<6)fail('Bitte kurz erklären, was du erledigt hast (6–400 Zeichen).');
+    db.prepare(`UPDATE clan_mission_claims SET status='submitted',note=?,review_note='',submitted_at=?,reviewed_at=NULL,reviewed_by=NULL
+     WHERE mission_id=? AND user_id=?`).run(note,now(),id,u.id);
+    audit(u,'clan_mission_submitted',id,'Erledigung zur Prüfung eingereicht');
+    return {ok:true};
+   });
+   return json(res,200,result);
   }
   if(p==='/api/hq/events'){
    const u=requireEventAccess(req);
