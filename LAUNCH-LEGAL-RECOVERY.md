@@ -38,3 +38,7 @@ Das Verschlüsselungs- und Prüfmodul heißt backup.js; es gibt die Restore-Funk
 - [ ] Links auf Impressum/Datenschutz auf Handy und PC geprüft
 
 **Bis zur Freigabe:** Dieser Branch und seine Entwürfe dürfen nicht automatisch in Produktion gemergt werden.
+
+## Technischer Schutz für persönliche Kontaktdaten
+
+Betreibername, Straße, PLZ/Ort und E-Mail **niemals in GitHub-Commits** schreiben. Die Vorlagen verwenden künftig die Platzhalter `{{LEGAL_NAME}}`, `{{LEGAL_STREET}}`, `{{LEGAL_CITY}}`, `{{LEGAL_EMAIL}}`. Später über private Hosting-Variablen `NOMERCY_LEGAL_NAME`, `NOMERCY_LEGAL_STREET`, `NOMERCY_LEGAL_CITY`, `NOMERCY_LEGAL_EMAIL` einspeisen. `NOMERCY_LEGAL_PUBLISH=1` erst **nach** korrekten Kontaktdaten **und** vollständiger rechtlicher Prüfung aktivieren. Entwürfe mit Warnhinweis oder unvollständigen Platzhaltern werden serverseitig mit HTTP 503 verweigert. Ohne bestätigte Straße und E-Mail keine Veröffentlichung.
