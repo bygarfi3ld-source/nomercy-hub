@@ -42,7 +42,7 @@ test('Moderator-Rollen, Meldungen, Event-Status, Auditlog und dauerhafte DB-Migr
   const report=await post(url,`/api/events/${eid}/report`,{reason:'Verdacht auf TPA-Trap',details:'Es soll sich um eine irreführende Teleport-Falle handeln.',evidence_url:'https://example.com/evidence',confirm_truth:true},cc);
   assert.equal(report.status,201);
   assert.equal((await (await api(url,'/api/admin/reports?status=open','GET',null,bc)).json()).reports.length,1);
-  assert.equal((await post(url,'/api/admin/reports/review',{id:1,status:'reviewed',note:'kurz'},bc)).status,400);
+  assert.equal((await post(url,'/api/admin/reports/review',{id:1,status:'reviewed',note:''},bc)).status,400);
   assert.equal((await post(url,'/api/admin/reports/review',{id:1,status:'reviewed',note:'Video geprüft; Verdacht noch nicht bestätigt.'},bc)).status,200);
   assert.equal((await (await api(url,'/api/admin/reports?status=reviewed','GET',null,bc)).json()).reports[0].status,'reviewed');
   assert.equal((await post(url,'/api/admin/events/status',{id:eid,status:'hidden',note:'Aus Sicherheitsgründen vorerst ausgeblendet.'},bc)).status,200);
