@@ -757,3 +757,7 @@ body[data-section]:not([data-section='market']) .memberbar{margin-bottom:21px}
 .footer-legal a:hover,.footer-legal a:focus-visible{color:#fff;text-decoration-color:currentColor}
 .footer-legal a:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:2px}
 @media(max-width:480px){.footer .footer-legal.wrap{gap:20px;padding:13px 16px 22px}}
+
+/* Privacy-first typography: device fonts only, no third-party network request. */
+:root{--font-body:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;--font-display:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+body{font-family:var(--font-body)}
