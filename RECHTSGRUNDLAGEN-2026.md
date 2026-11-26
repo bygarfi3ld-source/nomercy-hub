@@ -11,7 +11,7 @@
 - **DSGVO Art. 8** (bei tatsächlich einwilligungsbasierter Verarbeitung bei Kindern im Zusammenhang mit Diensten der Informationsgesellschaft; Nutzerkreis/Jugendschutz gesondert prüfen): DSGVO-Link oben
 - **EU Digital Services Act (VO EU 2022/2065)**: https://eur-lex.europa.eu/eli/reg/2022/2065/oj/deu ; wegen nutzergenerierter Marktangebote Einstufung und mögliche Verpflichtungen gemäß Art. 11–18 DSA prüfen; Kleinstanbieter haben nur teilweise Ausnahmen.
 - **Bundesnetzagentur DSA-Leitfaden**: https://www.bundesnetzagentur.de/DE/Fachthemen/DSC/1_Themen/PflichtenVermittlunggsdienste/start.html
-- **Railway Auftragsverarbeitungsbedingungen (DPA)**: https://railway.com/legal/dpa ; Einbeziehung, Unterauftragsverarbeiter, USA-Verarbeitung und Garantien für Drittlandtransfer prüfen.
+- **Railway Auftragsverarbeitungsbedingungen (DPA)**: https://railway.com/legal/dpa ; Railway erklärt in Ziffer 9 die USA als primären Verarbeitungsort. **DPA wird laut Ziffer 'Execution of this DPA' erst nach ausgefülltem DocuSign-Formular und Railway-Unterschrift verbindlich.** Nicht als abgeschlossen markieren, ohne eigene Bestätigung; Unterauftragsverarbeiter und Garantien für Drittlandtransfer prüfen.
 
 ## 2. Tatsächliche NoMercy-Datenflüsse und vorläufige Rechtsgrundlagen
 
@@ -37,7 +37,7 @@
 - [ ] DDG-/MStV-Pflichtangaben nach tatsächlichem Rechtsstatus geprüft.
 - [ ] Betroffenenrechte: Kontakt, Identitätskontrolle, Auskunft/Löschung, Ausnahmen bei historischen Bank-/Audit-Daten, angemessene Bearbeitungsfrist festgelegt.
 - [ ] Löschfristen und ein praktikabler Löschweg schriftlich definiert; aktuell keine pauschale automatische Kontolöschung vorhanden.
-- [ ] Railway-DPA und eventuelle US-Verarbeitung sowie konkrete Log-Aufbewahrung geprüft; DPA kann international verarbeitete Betriebs-/Diagnosedaten umfassen.
+- [ ] Railway-DPA über DocuSign eingereicht und von Railway ausgefertigt; Nachweis privat gespeichert. Primäre Datenverarbeitung in den USA und Logs/Drittlandgarantien bewertet.
 - [ ] Minderjährige und ggf. Anwendung des EU-DSA auf nutzergenerierte Marktplatzangebote geprüft; bestehendes Meldeformular nur für eingeloggte Nutzer ist nicht automatisch ausreichendes DSA-Verfahren.
 - [ ] Weitere externe Netzwerkressourcen (falls vorhanden) geprüft; keine ungefragten Google Fonts.
 - [ ] GitHub- und Railway-2FA vom Betreiber aktiviert und Wiederherstellungscodes getrennt aufbewahrt.
