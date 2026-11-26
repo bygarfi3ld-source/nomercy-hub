@@ -3,9 +3,11 @@ const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const date=x=>new Date(x).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-const state={user:null,market:[],events:[],giveaways:[],members:[],roster:[],teamRoles:[],reports:[],bank:null,tab:'market'};
+const state={user:null,market:[],events:[],giveaways:[],members:[],roster:[],teamRoles:[],reports:[],bank:null,taxes:null,tab:'market'};
 let toastTimeout,spinCancelled=false,spinActive=false,spinSkip=false;
-const staff=()=>['admin','moderator'].includes(state.user?.role);
+const staff=()=>['admin','coleader','moderator'].includes(state.user?.role);
+const clanLeader=()=>['admin','coleader'].includes(state.user?.role);
+const taxStaff=()=>staff();
 const eventCreator=()=>staff()||state.user?.role==='event_manager';
 const member=()=>!!state.user?.clan;
 const eventMember=()=>member()||state.user?.role==='event_manager';
@@ -31,7 +33,8 @@ function showAuth(register=false){modal(register?'Konto erstellen':'Anmelden',au
  $('#authForm').onsubmit=async e=>{e.preventDefault();const b=formToObj(e.currentTarget);try{await api(register?'/api/register':'/api/login',b);closeModal();await refreshUser();await Promise.all([loadMarket(),loadPrivate()]);if(state.tab==='bank')await loadBank();if(state.tab==='apply')await loadApplication();toast(register?'Willkommen im NoMercy Hub!':'Erfolgreich angemeldet.');}catch(err){formError(err);}};}
 function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.handle} ↗`:'Anmelden';$('#existingAccessBtn').hidden=!!u?.clan;$('#existingAccessBtn').textContent=u?'✓ Zugang bestätigen':'✓ Schon im Clan?';
  $$('.staff-action').forEach(x=>x.hidden=!staff());$$('.event-action').forEach(x=>x.hidden=!eventCreator());$('#moderationNav').hidden=!staff();$('#membersNav').hidden=!staff();
- $('#memberManagement').hidden=u?.role!=='admin';$('#approvedMembersPanel').hidden=u?.role!=='admin';$('#teamRolesPanel').hidden=u?.role!=='admin';$('#clanApplicationsPanel').hidden=u?.role!=='admin';
+ $('#memberManagement').hidden=!clanLeader();$('#approvedMembersPanel').hidden=!clanLeader();$('#teamRolesPanel').hidden=u?.role!=='admin';$('#clanApplicationsPanel').hidden=!clanLeader();
+ $('#bankTaxPanel').hidden=!taxStaff();$('#bankTaxJump').hidden=!taxStaff();
  $('#membersPanel').setAttribute('aria-label','Clan-Team – nur für berechtigte Teammitglieder');
  $('#bankTransactionBtn').hidden=u?.role!=='admin';$('#bankRequestBtn').hidden=!bankEligible();
  $('#memberbar').textContent=!u?'Marktplatz für alle · Öffentliche Giveaways mit Hub-Konto · Clan-Events nur mit Freigabe.':
@@ -217,11 +220,11 @@ async function loadTeamRoles(){
  if(state.user?.role!=='admin')return;
  setSkeleton('#teamRoleList',2,'row');
  const {team}=await api('/api/admin/team');state.teamRoles=Array.isArray(team)?team:[];
- $('#teamRoleList').innerHTML=state.teamRoles.length?state.teamRoles.map(u=>'<div class="team-role-item"><span><strong>'+esc(u.handle)+'</strong><small>'+esc(({admin:'Administrator',moderator:'Moderator · Giveaways & Moderation',event_manager:'Event-Team · nur Events'})[u.role]||u.role)+'</small></span><span class="pill '+(u.role==='admin'?'red':'dark')+'">'+esc(u.role==='admin'?'OWNER':u.role==='moderator'?'MOD':'EVENT')+'</span></div>').join(''):'<p class="muted">Noch keine Teamrollen vergeben.</p>';finishSkeleton('#teamRoleList');
+ $('#teamRoleList').innerHTML=state.teamRoles.length?state.teamRoles.map(u=>'<div class="team-role-item"><span><strong>'+esc(u.handle)+'</strong><small>'+esc(({admin:'Owner · volle Verantwortung',coleader:'Co-Leader · Mitglieder, Giveaways, Steuern',moderator:'Moderator · Giveaways, Events, Steuern',event_manager:'Event-Team · nur Events'})[u.role]||u.role)+'</small></span><span class="pill '+(u.role==='admin'?'red':'dark')+'">'+esc(({admin:'OWNER',coleader:'CO-LEADER',moderator:'MOD',event_manager:'EVENT'})[u.role]||u.role)+'</span></div>').join(''):'<p class="muted">Noch keine Teamrollen vergeben.</p>';finishSkeleton('#teamRoleList');
 }
 async function loadTeam(){if(!staff())return;
  setSkeleton('#marketReports',2,'row');
- if(state.user.role==='admin'){
+ if(clanLeader()){
   setSkeleton('#memberList',3);
   setSkeleton('#clanApplications',2);
   setSkeleton('#clanApplicationsHistory',2);
@@ -249,7 +252,7 @@ async function loadTeam(){if(!staff())return;
    <div class="meta">Eingereicht: ${date(r.created_at)} · Bearbeitet: ${date(r.updated_at)}${r.reviewed_by_handle?' · von '+esc(r.reviewed_by_handle):''}</div>
    ${r.review_note?`<p class="desc">Entscheidung: ${esc(r.review_note)}</p>`:''}
    </article>`).join(''):'<div class="empty">Noch keine bearbeiteten Clan-Bewerbungen.</div>';
-  $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small>${u.clan==='clan3'?`<button type="button" class="btn outline" data-clan-promote="clan2" data-handle="${esc(u.handle)}">⬆ Zu Clan 2 befördern</button>`:u.clan==='clan2'?`<button type="button" class="btn primary" data-clan-promote="main" data-handle="${esc(u.handle)}">👑 In den Mainclan befördern</button>`:''}<button type="button" class="btn outline clan-remove-btn" data-clan-remove data-handle="${esc(u.handle)}" aria-label="${esc(u.handle)} aus dem Clan entfernen">✕ Aus Clan entfernen</button></div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';finishSkeleton('#memberList');finishSkeleton('#clanApplications');finishSkeleton('#clanApplicationsHistory');
+  $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small>${(state.user.role==='admin'||!['admin','coleader'].includes(u.role))?(u.clan==='clan3'?`<button type="button" class="btn outline" data-clan-promote="clan2" data-handle="${esc(u.handle)}">⬆ Zu Clan 2 befördern</button>`:u.clan==='clan2'?`<button type="button" class="btn primary" data-clan-promote="main" data-handle="${esc(u.handle)}">👑 In den Mainclan befördern</button>`:'')+`${u.role==='admin'?'':`<button type="button" class="btn outline clan-remove-btn" data-clan-remove data-handle="${esc(u.handle)}" aria-label="${esc(u.handle)} aus dem Clan entfernen">✕ Aus Clan entfernen</button>`}`:'<small>Nur Owner darf diese Leitung verwalten</small>'}</div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';finishSkeleton('#memberList');finishSkeleton('#clanApplications');finishSkeleton('#clanApplicationsHistory');
  }
  const data=await api('/api/hq/mod/market');state.reports=data.reports;
  $('#marketReports').innerHTML=data.reports.filter(r=>r.status==='open').length?data.reports.filter(r=>r.status==='open').map(r=>`<div class="tile mod-report-card"><strong>${esc(r.listing_title)} · #${r.listing_id}</strong><p class="desc">${esc(r.reason)}</p><small>Von ${esc(r.reporter)} · ${date(r.created_at)}</small><label class="tag">Begründung<textarea id="report-note-${r.id}" maxlength="400"></textarea></label><div class="actions"><button class="btn outline" data-review="dismissed" data-id="${r.id}">Verwerfen</button><button class="btn primary" data-review="reviewed" data-id="${r.id}">Prüfung speichern</button><button class="btn outline" data-hide-listing="${r.listing_id}" data-note-id="report-note-${r.id}">Inserat ausblenden</button></div></div>`).join(''):'<p class="muted">Keine offenen Markt-Meldungen.</p>';finishSkeleton('#marketReports');
@@ -468,7 +471,7 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
   if(ev.dataset.event==='close')await withAction(async()=>{const note=askNote('Warum das Event schließen?');if(!note)return;await api(`/api/hq/events/${id}/status`,{status:'closed',note});await loadPrivate();toast('Event geschlossen.');});return;
  }
  const removeMember=e.target.closest('[data-clan-remove]');if(removeMember){
-  if(state.user?.role!=='admin')return;
+  if(!clanLeader())return;
   const handle=removeMember.dataset.handle;
   if(!confirm(handle+' wirklich aus NoMercy entfernen?\n\nDer Hub-Account bleibt bestehen, aber der Clan-Zugang, private Events/Giveaways und ggf. Mod-/Event-Rechte werden sofort entzogen.'))return;
   await withAction(async()=>{
