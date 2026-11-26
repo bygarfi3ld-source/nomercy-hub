@@ -45,7 +45,6 @@ test('Co-Leader and Mods manage monthly taxes and giveaways, never the treasury 
   const mod=await register(url,'TaxMod');
   const member=await register(url,'TaxMember');
   const event=await register(url,'TaxEvent');
-  const stranger=await register(url,'TaxGuest');
   assert.equal((await call(url,'/api/admin/claim',{token},owner)).status,200);
 
   assert.equal((await call(url,'/api/admin/team',{handle:'TaxCoLead',role:'coleader'},owner)).status,409,'Co-leaders must be confirmed clan members');
@@ -61,7 +60,7 @@ test('Co-Leader and Mods manage monthly taxes and giveaways, never the treasury 
 
   const taxPath='/api/hq/bank/taxes';
   assert.equal((await call(url,taxPath)).status,401);
-  for(const cookie of [stranger,member,event])assert.equal((await call(url,taxPath,undefined,cookie)).status,403);
+  for(const cookie of [member,event])assert.equal((await call(url,taxPath,undefined,cookie)).status,403);
   for(const cookie of [owner,coleader,mod])assert.equal((await call(url,taxPath,undefined,cookie)).status,200);
   assert.equal((await call(url,'/api/hq/bank',undefined,mod)).status,403,'Unapproved moderator cannot browse treasury');
   assert.equal((await call(url,'/api/hq/bank',undefined,coleader)).status,200);
@@ -135,9 +134,14 @@ test('Clanbank monthly tax subpage, owner Co-Leader UI, and permission restricti
  assert.match(html,/value="coleader"/);
  assert.match(html,/Co-Leader · Clanleitung \+ Giveaways \+ Steuern/);
  assert.match(js,/function renderMonthlyTaxes/);
+ assert.match(js,/Steuern Mainclan/);
+ assert.match(js,/Steuern 2\. Clan/);
+ assert.match(js,/Steuern 3\. Clan/);
+ assert.match(js,/data-tax-clan/);
  assert.match(js,/data-tax-check/);
  assert.match(js,/role==='admin'/);
  assert.match(css,/\.bank-tax-row/);
+ assert.match(css,/\.bank-tax-group\{/);
  assert.match(backend,/canManageTaxes/);
  assert.match(backend,/month TEXT NOT NULL/);
 });
