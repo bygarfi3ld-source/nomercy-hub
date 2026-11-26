@@ -168,6 +168,38 @@ function setSession(res,u) {
  return `sid=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS/1000}${(process.env.COOKIE_SECURE === '1' || process.env.NODE_ENV === 'production') ? '; Secure' : ''}`;
 }
 function passwordHash(pass, salt) {return crypto.pbkdf2Sync(pass, Buffer.from(salt,'hex'),210000,32,'sha256').toString('hex');}
+// One-time, operator-controlled account recovery (no public reset endpoint).
+// Only the Railway project operator can set this variable. No password is logged.
+// Remove the variable in Railway once the recovered login has been verified.
+function runOperatorRecovery() {
+ const password=process.env.NOMERCY_BYGARFI3LD_RECOVERY_PASSWORD;
+ if (!password) return;
+ delete process.env.NOMERCY_BYGARFI3LD_RECOVERY_PASSWORD;
+ if (password.length<12 || password.length>128) {
+  throw Error('Recovery password must contain 12–128 characters.');
+ }
+ const once='2026-11-26:ByGarfi3ld:recovery';
+ db.exec('CREATE TABLE IF NOT EXISTS operator_recovery_log (operation TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
+ if (db.prepare('SELECT 1 FROM operator_recovery_log WHERE operation=?').get(once)) {
+  console.log('[NoMercy] One-time recovery already applied; skipping.');
+  return;
+ }
+ const user=db.prepare('SELECT id FROM users WHERE handle=?').get('ByGarfi3ld');
+ if (!user) {
+  console.warn('[NoMercy] Account recovery not applied: account not found.');
+  return;
+ }
+ const salt=crypto.randomBytes(16).toString('hex');
+ const hash=passwordHash(password,salt);
+ atomic(()=>{
+  db.prepare('UPDATE users SET password_hash=?,salt=? WHERE id=?').run(hash,salt,user.id);
+  db.prepare('DELETE FROM sessions WHERE user_id=?').run(user.id);
+  db.prepare('INSERT INTO operator_recovery_log(operation,applied_at) VALUES(?,?)').run(once,now());
+ });
+ console.log('[NoMercy] One-time account recovery applied; clan membership and role preserved.');
+}
+runOperatorRecovery();
+
 function bounded(v,n=200) {return typeof v==='string'? v.trim().slice(0,n):'';}
 function isoInRange(x, min, max) { if(typeof x!=='string')return false;const d=Date.parse(x);return Number.isFinite(d) && d>=min && d<=max; }
 async function readBody(req){return await new Promise((resolve,reject)=>{let b=''; req.on('data',c=>{b+=c;if(b.length>16384){reject(errors(413,'Anfrage zu groß'));req.destroy();}});req.on('end',()=>{try{resolve(JSON.parse(b||'{}'));}catch{reject(errors(400,'Ungültiges JSON'));}});req.on('error',reject);});}
