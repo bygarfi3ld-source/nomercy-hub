@@ -226,7 +226,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   if(p==='/api/hq/clan/members'){
    if(m==='GET'){
     clanLeader(req);
-    return json(res,200,{members:db.prepare(`SELECT u.handle,cm.clan,cm.approved_at FROM clan_memberships cm JOIN users u ON u.id=cm.user_id
+    return json(res,200,{members:db.prepare(`SELECT u.handle,u.role,cm.clan,cm.approved_at FROM clan_memberships cm JOIN users u ON u.id=cm.user_id
      ORDER BY cm.approved_at DESC LIMIT 300`).all()});
    }
    postOnly(m);const staff=clanLeader(req);checkRate(req,'hq-members',20,3600000);
@@ -236,6 +236,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    if(!target)throw errors(404,'Hub-Konto nicht gefunden.');
    // Removing clan membership does not delete the Hub account, but must revoke all private privileges.
    // Protect the owner account from accidental self-lockout.
+   if(target.role==='admin'&&staff.role!=='admin')throw errors(403,'Nur der Owner darf Änderungen am Owner-Konto vornehmen.');
    if(clan==='remove'&&target.role==='admin')throw errors(403,'Admin-Konten können hier nicht aus dem Clan entfernt werden.');
    if(target.role==='coleader'&&staff.role!=='admin')throw errors(403,'Nur der Owner darf den Clanrang eines anderen Co-Leaders ändern.');
    if(clan==='remove'&&target.id===staff.id)throw errors(403,'Du kannst deinen eigenen Clan-Zugang hier nicht entfernen.');
