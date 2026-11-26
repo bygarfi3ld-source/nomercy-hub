@@ -24,7 +24,7 @@ test('Clan-Beitrittsantrag: nur Admin darf freischalten, kein Namen-Spoofing', {
   assert.equal((await req(url,'/api/hq/clan/requests',{})).status,401);
   assert.equal((await req(url,'/api/admin/claim',{token},owner)).status,200);
   const application={mc_name:'Unverified123',desired_clan:'clan2',message:'Ich spiele seit Wochen und helfe gern bei NoMercy-Events.'};
-  assert.equal((await req(url,'/api/hq/clan/requests',{...application,message:'too short'},member)).status,400);
+  assert.equal((await req(url,'/api/hq/clan/requests',{...application,message:''},member)).status,400);
   assert.equal((await req(url,'/api/hq/clan/requests',application,member)).status,201);
   assert.equal((await req(url,'/api/hq/clan/requests',application,member)).status,409,'Kein doppelter Antrag');
   assert.equal((await req(url,'/api/hq/events',undefined,member)).status,403,'Noch kein Clan-Zugriff');
