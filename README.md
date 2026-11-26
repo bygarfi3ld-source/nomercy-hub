@@ -2,10 +2,26 @@
 
 **Inoffizielles, eigenständiges Open-Source-Projekt für NoMercy und die HugoSMP-Community.** Nicht von HugoSMP, Mojang oder Microsoft betrieben. Kein Plugin und keine Verbindung zu einem Minecraft- oder Microsoft-Konto erforderlich.
 
+## Aktuelle Zugriffsrechte (26.11.2026)
+
+| Aktion | Berechtigte Konten |
+| --- | --- |
+| Teamrollen vergeben und entziehen | Nur Owner (`admin`) |
+| Bewerbungen aller Spieler einsehen und entscheiden | Owner und Moderation |
+| Giveaways und Clan-Events erstellen und verwalten | Owner und Moderation |
+| Clanbank buchen, Auszahlungen prüfen und Monatssteuern verwalten | Owner und Moderation |
+| Clanbank lesen und Verwendungsanträge stellen | Bestätigte Clanmitglieder, Owner und Moderation |
+| Marktplatz lesen | Alle Besucher |
+| Marktplatzanzeige erstellen und eigene Anzeige entfernen | Alle angemeldeten Konten |
+| Fremde Anzeigen und beliebige Clan-Events entfernen | Owner und Moderation, mit protokollierter Begründung |
+| Eigene Bewerbung und deren Status sehen | Das jeweilige angemeldete Konto |
+
+Das Entfernen nimmt Anzeigen oder Events dauerhaft aus den Nutzerlisten. Interne Nachweise und Moderationsprotokolle bleiben erhalten. Die Regeln gelten auch für die älteren `/api/events`-Endpunkte. Es werden keine bestehenden Konten, Bankbuchungen oder Mitgliedschaften gelöscht.
+
 ## V1.0 – Clan Hub, Bewerbungen und Giveaway-Feuerwerk
 
 - **Marktplatz** ist ohne Anmeldung lesbar; Inserate, Kontaktdetails und Markt-Meldungen funktionieren mit Hub-Konto.
-- **Öffentliche Giveaways** sind für alle sichtbar, die Teilnahme erfordert ein Hub-Konto. **Private Giveaways und Clan-Events** benötigen eine persönliche Freischaltung der Clanleitung. Nicht freigeschaltete Spieler können eine **Beitrittsanfrage** mit Wunschclan, unverifiziertem Minecraft-Namen und Begründung stellen. Nur der Admin (nicht Moderatoren) kann freigeben. Admin-Entscheidungen werden protokolliert.
+- **Öffentliche Giveaways** sind für alle sichtbar, die Teilnahme erfordert ein Hub-Konto. **Private Giveaways und Clan-Events** benötigen eine persönliche Freischaltung der Clanleitung. Nicht freigeschaltete Spieler können eine **Beitrittsanfrage** mit Wunschclan, unverifiziertem Minecraft-Namen und Begründung stellen. Owner und Moderation können freigeben. Entscheidungen werden protokolliert.
 - **Clanbank** mit gemeinsamer, manuell verwalteter Ingame-Kasse, nachvollziehbarem Ledger und Verwendungsanträgen. Genehmigung und tatsächlich bestätigte Auszahlung sind getrennt; keine echten Zahlungen.
 - **Gewinner-Reveal mit Sound**: ruhiger Namenslauf, progressives Enthüllen und ein selbst synthetisierter, kurzer Pixel-Feuerwerksklang. Start erst nach Benutzertipp, Ein-/Aus-Schalter vorhanden; keinerlei originale Minecraft-Audiodatei. Auf Wunsch reduzierte Bewegung und Überspringen.
 - **Design**: eigenes NM-Wappen, kleine selbst gezeichnete Pixel-Items auf jeder Hauptseite, weiche Karten und echte Skeleton-Ladezustände; mobil optimiert.
@@ -120,7 +136,7 @@ Siehe [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md), inklusive manuellem Railway-
 
 ## V1.1 – Event-Team & sichtbare Ladeanimationen
 
-Admins können auf `/moderation.html` vertrauenswürdige Hub-Konten als **Event-Team** (`event_manager`) oder **Moderator** ernennen und wieder auf `member` zurücksetzen. Die neue Event-Team-Rolle ist bewusst eingeschränkt: Clan-Events ansehen, erstellen, teilnehmen und **nur eigene** Events schließen; keine Bank, keine Giveaway-Erstellung/Auszahlung, keine Moderation und keine Clan-Freigabe. Moderatoren behalten die bisherigen Rechte für Event-, Giveaway- und Marktplatzverwaltung. Jede Rollenzuweisung wird im bestehenden `moderation_log` erfasst; Zugriffsrechte werden bei jeder Anfrage erneut aus der Datenbank geprüft.
+Der Owner verwaltet die Teamrollen. Seit der Rechteprüfung vom 26.11.2026 geben ausschließlich `admin` (Owner) und `moderator` Verwaltungszugriff. Die weiterhin gespeicherten Rollen `coleader` und `event_manager` vergeben keine Verwaltungsrechte; eine bestätigte Clanmitgliedschaft erlaubt weiterhin die normalen Clan-Funktionen. Rollenänderungen werden protokolliert und bei jeder Anfrage neu ausgewertet.
 
 Skeletons sind nun bei sehr schnellen API-Antworten für ca. 0,32–0,39 Sekunden sichtbar, bei langsamen Antworten bleiben sie bis zur tatsächlichen Antwort. `prefers-reduced-motion` vermeidet jede künstliche Verzögerung. Die Website zeigt niemals erfundene Event- oder Marktdaten.
 

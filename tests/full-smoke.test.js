@@ -74,17 +74,18 @@ test('Full isolated NoMercy smoke test: signup, existing Main, roles, giveaways,
   assert.equal((await request(url,'/api/hq/giveaways/'+gid+'/fulfill',{note:'x'},mod)).status,409);
 
   const event={title:'E',description:'X',category:'FFA',starts_at:new Date(Date.now()+7200000).toISOString(),duration_minutes:15,max_players:2};
-  const ev=await request(url,'/api/hq/events',event,eventTeam);
+  assert.equal((await request(url,'/api/hq/events',event,eventTeam)).status,403,'Event-Team has no moderation privileges');
+  const ev=await request(url,'/api/hq/events',event,mod);
   assert.equal(ev.status,201,JSON.stringify(ev.data));
   assert.equal((await request(url,'/api/hq/events',undefined,outsider)).status,403);
   assert.equal((await request(url,'/api/hq/events/'+ev.data.id+'/join',{},member)).status,200);
-  assert.equal((await request(url,'/api/hq/events/'+ev.data.id+'/status',{status:'closed',note:'x'},eventTeam)).status,200);
+  assert.equal((await request(url,'/api/hq/events/'+ev.data.id+'/status',{status:'closed',note:'x'},mod)).status,200);
 
-  assert.equal((await request(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'20',note:'x'},mod)).status,403);
+  assert.equal((await request(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'0',note:'x'},mod)).status,400,'Moderator reaches amount validation');
   assert.equal((await request(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'20',note:'x'},admin)).status,201);
   const br=await request(url,'/api/hq/bank/requests',{title:'B',reason:'x',amount:'1'},member);
   assert.equal(br.status,201,JSON.stringify(br.data));
-  assert.equal((await request(url,'/api/hq/bank/requests/'+br.data.id+'/review',{decision:'approve',note:'x'},mod)).status,403);
+  assert.equal((await request(url,'/api/hq/bank/requests/'+br.data.id+'/review',{decision:'approve',note:'x'},member)).status,403);
   assert.equal((await request(url,'/api/hq/bank/requests/'+br.data.id+'/review',{decision:'approve',note:'x'},admin)).status,200);
   assert.equal((await request(url,'/api/hq/bank/requests/'+br.data.id+'/payout',{note:'x'},admin)).status,200);
   assert.equal((await request(url,'/api/hq/bank/requests/'+br.data.id+'/payout',{note:'x'},admin)).status,409);

@@ -214,7 +214,7 @@ test('Admin can remove a departed member: private access, roles and open entries
   const eid=event.data.id;
   for(const cookie of [former,mod,planner])
    assert.equal((await response(url,'/api/hq/events/'+eid+'/join',{},cookie)).status,200);
-  assert.equal((await response(url,'/api/hq/clan/members',{handle:'FormerMember',clan:'remove'},mod)).status,403,'Only admin can remove');
+  assert.equal((await response(url,'/api/hq/clan/members',{handle:'FormerMember',clan:'remove'},former)).status,403,'Normal members cannot remove others');
   assert.equal((await response(url,'/api/hq/clan/members',{handle:'RemoveAdmin',clan:'remove'},admin)).status,403,'Cannot remove owner');
   for(const [name,cookie] of [['FormerMember',former],['FormerMod',mod],['FormerEvent',planner]]){
    assert.equal((await response(url,'/api/hq/clan/members',{handle:name,clan:'remove'},admin)).status,200);

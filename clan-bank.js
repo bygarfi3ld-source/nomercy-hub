@@ -37,7 +37,8 @@ function initClanBank({db,json,readBody,errors,requireUser,checkRate,now}) {
  const trim=(v,max)=>typeof v==='string'?v.trim().slice(0,max+1):'';
  const atomic=(fn)=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
  const isOwner=(u)=>u.role==='admin';
- const canManageTaxes=(u)=>['admin','coleader','moderator'].includes(u.role);
+ const canManageBank=(u)=>['admin','moderator'].includes(u.role);
+ const canManageTaxes=canManageBank;
  const taxManager=(req)=>{const u=requireUser(req);if(!canManageTaxes(u))throw errors(403,'Nur Mods und Clanleitung verwalten Monatssteuern.');return u;};
  const currentMonth=()=>{
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit'}).formatToParts(new Date());
@@ -68,8 +69,8 @@ function initClanBank({db,json,readBody,errors,requireUser,checkRate,now}) {
   return {month,rows,paid:rows.filter(r=>r.paid===1).length,unpaid:rows.filter(r=>r.paid===0).length};
  };
  const member=(u)=>!!db.prepare('SELECT 1 FROM clan_memberships WHERE user_id=?').get(u.id);
- const access=(req)=>{const u=requireUser(req);if(!isOwner(u)&&u.role!=='coleader'&&!member(u))throw errors(403,'Clanbank nur für von der Leitung freigeschaltete NoMercy-Mitglieder.');return u;};
- const admin=(req)=>{const u=requireUser(req);if(!isOwner(u))throw errors(403,'Nur die Clanleitung darf die Clanbank verwalten.');return u;};
+ const access=(req)=>{const u=requireUser(req);if(!canManageBank(u)&&!member(u))throw errors(403,'Clanbank nur für von der Leitung freigeschaltete NoMercy-Mitglieder.');return u;};
+ const admin=(req)=>{const u=requireUser(req);if(!canManageBank(u))throw errors(403,'Nur Owner und Moderation dürfen die Clanbank verwalten.');return u;};
  const amount=(raw,allowZero=false)=>{
   // JSON numbers are converted without floating point arithmetic by parsing their string representation.
   const v=typeof raw==='string'?raw.trim():typeof raw==='number'?String(raw):'';
@@ -125,7 +126,7 @@ function initClanBank({db,json,readBody,errors,requireUser,checkRate,now}) {
    const ledger=db.prepare(`SELECT l.id,l.kind,l.delta_milli,l.before_milli,l.after_milli,l.note,l.created_at,
     l.request_id,u.handle AS actor FROM clan_bank_ledger l JOIN users u ON u.id=l.actor_id
     ORDER BY l.id DESC LIMIT 100`).all();
-   return json(res,200,{balance_milli:balance(),is_admin:isOwner(u),requests:rows.map(({user_id,decided_by,paid_by,...r})=>r),ledger});
+   return json(res,200,{balance_milli:balance(),is_admin:isOwner(u),can_manage:canManageBank(u),requests:rows.map(({user_id,decided_by,paid_by,...r})=>r),ledger});
   }
   if(m!=='POST')throw errors(405,'Methode nicht erlaubt');
   if(p==='/api/hq/bank/requests'){

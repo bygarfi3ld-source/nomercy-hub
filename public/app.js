@@ -34,6 +34,7 @@ async function fetchAll({skeleton=false}={}){
   const [me,events,stats]=await Promise.all([api('/api/me'),api('/api/events'),api('/api/stats')]);
   state.user=me.user;state.events=events.events;state.stats=stats;
   $('#accountButton').textContent=state.user?state.user.handle:'Anmelden';
+  $$('[data-action="create"]').forEach(button=>button.hidden=!['admin','moderator'].includes(state.user?.role));
   $('#modLink').style.display=['admin','moderator'].includes(state.user?.role)?'inline-flex':'none';
   $('#statEvents').textContent=stats.events;$('#statPlayers').textContent=stats.participants;
   $('#eventsGrid').setAttribute('aria-busy','false');renderEvents();if(state.page==='mine')renderMine();
@@ -83,7 +84,7 @@ function openAuth(tab='login') {
  });
 }
 const localInput = minutes=>{const d=new Date(Date.now()+minutes*60000);const pad=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;};
-function openCreate(){ensureAuth(()=>{
+function openCreate(){if(!state.user)return openAuth();if(!['admin','moderator'].includes(state.user.role))return toast('Nur Owner und Moderation können Events erstellen.');ensureAuth(()=>{
  setModal('Event erstellen','CREATE / LIVE-VORSCHAU',`<div class="create-layout">
  <form id="createForm" class="create-form">
  <div class="create-steps"><span class="step-active">01 <b>Eventdetails</b></span><span>02 <b>Vorschau</b></span><span>03 <b>Veröffentlichen</b></span></div>

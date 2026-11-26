@@ -108,16 +108,16 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
  const clean=(v,max=160)=>typeof v==='string'?v.trim().slice(0,max):'';
  const fail=(message)=>{throw errors(400,message)};
  const runAtomic=(fn)=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
- const isStaff=(u)=>!!u&&['admin','coleader','moderator'].includes(u.role);
- const clanLeader=(req)=>{const u=requireUser(req);if(!['admin','coleader'].includes(u.role))throw errors(403,'Nur Clanleitung und Co-Leader dürfen Clanmitglieder verwalten.');return u;};
- const canManageEvents=(u)=>!!u&&['admin','coleader','moderator','event_manager'].includes(u.role);
+ const isStaff=(u)=>!!u&&['admin','moderator'].includes(u.role);
+ const clanLeader=(req)=>{requireUser(req);return requireStaff(req);};
+ const canManageEvents=isStaff;
  const membership=(u)=>{
   if(!u)return null;
   const m=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(u.id);
   return m?.clan|| (isStaff(u)?'staff':null);
  };
- const canSeeEvents=(u)=>!!u&&(!!membership(u)||u.role==='event_manager');
- const requireEventAccess=(req)=>{const u=requireUser(req);if(!canSeeEvents(u))throw errors(403,'Clan-Events sind nur für freigeschaltete Mitglieder und das Event-Team.');return u;};
+ const canSeeEvents=(u)=>!!membership(u);
+ const requireEventAccess=(req)=>{const u=requireUser(req);if(!canSeeEvents(u))throw errors(403,'Clan-Events sind nur für freigeschaltete Mitglieder und die Moderation.');return u;};
  const audit=(u,action,id,details)=>db.prepare('INSERT INTO clan_hq_audit(actor_id,action,object_id,details,created_at) VALUES(?,?,?,?,?)').run(u.id,action,id,clean(details,400),now());
  function drawOne(id) {
   return runAtomic(()=>{
@@ -184,7 +184,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   if(p==='/api/hq/clan/requests'){
    if(m==='GET'){
     const u=requireUser(req);
-    if(['admin','coleader'].includes(u.role)){
+    if(isStaff(u)){
      const requests=db.prepare(`SELECT r.id,r.user_id,u.handle,r.mc_name,r.desired_clan,r.message,
        r.request_type,r.status,r.created_at,r.updated_at,r.review_note,a.handle AS reviewed_by_handle
        FROM clan_join_requests r JOIN users u ON u.id=r.user_id
@@ -406,7 +406,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
      WHERE e.status!='hidden' ORDER BY e.starts_at ASC LIMIT 100`).all();
     return json(res,200,{events:rows.map(e=>eventView(e,u))});
    }
-   postOnly(m);if(!canManageEvents(u))throw errors(403,'Nur das Event-Team und die Clanleitung können Events erstellen.');checkRate(req,'hq-event-create',10,3600000);
+   postOnly(m);if(!canManageEvents(u))throw errors(403,'Nur Owner und Moderation können Events erstellen.');checkRate(req,'hq-event-create',10,3600000);
    const b=await readBody(req),title=clean(b.title,80),description=clean(b.description,700),category=b.category,
     max=Number(b.max_players),start=future(b.starts_at,60000,30*86400000),duration=Number(b.duration_minutes);
    if(!title||!description||!['FFA','Baseraid','Turnier','Training','Community'].includes(category)||
@@ -433,9 +433,9 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    const b=await readBody(req);
    if(!['closed','hidden','open'].includes(b.status))fail('Ungültiger Status.');
    const note=clean(b.note,400);if(!note)fail('Bitte eine Begründung angeben.');
-   const e=db.prepare('SELECT status,creator_id FROM clan_events WHERE id=?').get(id);
+   const e=db.prepare('SELECT status,creator_id,ends_at FROM clan_events WHERE id=?').get(id);
    if(!e)throw errors(404,'Event nicht gefunden');
-   if(staff.role==='event_manager'&&(e.creator_id!==staff.id||b.status!=='closed'))throw errors(403,'Event-Team darf nur eigene Events schließen.');
+   if(b.status==='open'&&e.ends_at<=now())throw errors(409,'Vergangene Events können nicht erneut geöffnet werden.');
    runAtomic(()=>{db.prepare('UPDATE clan_events SET status=? WHERE id=?').run(b.status,id);audit(staff,'clan_event_status',id,`${e.status} -> ${b.status}: ${note}`)});
    return json(res,200,{ok:true});
   }
@@ -516,7 +516,13 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
     const row=db.prepare('SELECT creator_id,status FROM market_listings WHERE id=?').get(id);
     if(!row)throw errors(404,'Inserat nicht gefunden');
     if(row.creator_id!==u.id&&!isStaff(u))throw errors(403,'Nur Ersteller oder Moderation.');
-    db.prepare("UPDATE market_listings SET status='closed',updated_at=? WHERE id=? AND status='open'").run(now(),id);
+    const body=await readBody(req);
+    const note=row.creator_id===u.id?'Eigene Anzeige entfernt.':clean(body.note,400);
+    if(!note)fail('Bitte die Entfernung kurz begründen.');
+    runAtomic(()=>{
+     db.prepare("UPDATE market_listings SET status='closed',updated_at=? WHERE id=? AND status='open'").run(now(),id);
+     if(row.status==='open')audit(u,'market_removed',id,note);
+    });
     return json(res,200,{ok:true});
    }
    if(act==='moderate'){

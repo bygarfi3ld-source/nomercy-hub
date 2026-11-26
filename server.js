@@ -163,7 +163,7 @@ function currentUser(req) {
 function requireUser(req) { const u=currentUser(req); if(!u)throw errors(401,'Bitte zuerst ein Hub-Konto erstellen oder anmelden.'); return u; }
 function requireStaff(req, adminOnly=false) {
  const u=currentUser(req);
- if(!u || (adminOnly?u.role!=='admin':!['admin','coleader','moderator'].includes(u.role))) {
+ if(!u || (adminOnly?u.role!=='admin':!['admin','moderator'].includes(u.role))) {
   throw errors(403,'Keine Moderationsberechtigung.');
  }
  return u;
@@ -289,7 +289,7 @@ async function api(req,res,url) {
   return json(res,200,{events:ev.map(e=>asEvent(e,viewer?.id))});
  }
  if(p==='/api/events'&&method==='POST') {
-  const u=requireUser(req);checkRate(req,'events',8,3600000);const b=await readBody(req);
+  requireUser(req);const u=requireStaff(req);checkRate(req,'events',8,3600000);const b=await readBody(req);
   const title=bounded(b.title,70),type=b.type,dimension=b.dimension,host=bounded(b.mc_host,16),note=bounded(b.note,360),max=Number(b.max_players);
   if(!title)throw errors(400,'Bitte einen Titel eingeben.');
   if(!eventTypes.includes(type)||!dimensions.includes(dimension))throw errors(400,'Eventart oder Dimension ungültig.');
@@ -319,8 +319,8 @@ async function api(req,res,url) {
     db.prepare('INSERT INTO registrations(event_id,user_id,created_at) VALUES(?,?,?)').run(id,u.id,now());return json(res,200,{joined:true});
   }
   if(method==='POST'&&act==='close'){
-    const u=requireUser(req);if(e.creator_id!==u.id||e.is_demo)throw errors(403,'Du bist nicht der Ersteller.');
-    db.prepare('UPDATE events SET status=? WHERE id=?').run('closed',id);return json(res,200,{ok:true});
+    requireUser(req);const u=requireStaff(req);if(e.is_demo)throw errors(403,'Beispiel-Events können nicht verwaltet werden.');
+    atomic(()=>{db.prepare('UPDATE events SET status=? WHERE id=?').run('closed',id);audit(u,'event_close',id,null,e.status,'closed','Event durch Owner oder Moderation geschlossen.');});return json(res,200,{ok:true});
   }
   if(method==='POST'&&act==='report'){
     const u=requireUser(req);checkRate(req,'report',8,3600000);if(e.is_demo)throw errors(409,'Demo-Events können nicht gemeldet werden.');

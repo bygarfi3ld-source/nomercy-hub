@@ -36,7 +36,7 @@ function monthNow(){
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit'}).formatToParts(new Date());
  return parts.find(x=>x.type==='year').value+'-'+parts.find(x=>x.type==='month').value;
 }
-test('Co-Leader and Mods manage monthly taxes and giveaways, never the treasury or team rights', {timeout:60000},async()=>{
+test('Only Owner and Mods manage taxes, giveaways and treasury; team rights remain Owner-only', {timeout:60000},async()=>{
  const dir=mkdtempSync(path.join(tmpdir(),'nm-clan-taxes-'));let srv;
  try{
   srv=await start(dir);let url=srv.url;
@@ -60,9 +60,9 @@ test('Co-Leader and Mods manage monthly taxes and giveaways, never the treasury 
 
   const taxPath='/api/hq/bank/taxes';
   assert.equal((await call(url,taxPath)).status,401);
-  for(const cookie of [member,event])assert.equal((await call(url,taxPath,undefined,cookie)).status,403);
-  for(const cookie of [owner,coleader,mod])assert.equal((await call(url,taxPath,undefined,cookie)).status,200);
-  assert.equal((await call(url,'/api/hq/bank',undefined,mod)).status,403,'Unapproved moderator cannot browse treasury');
+  for(const cookie of [member,event,coleader])assert.equal((await call(url,taxPath,undefined,cookie)).status,403);
+  for(const cookie of [owner,mod])assert.equal((await call(url,taxPath,undefined,cookie)).status,200);
+  assert.equal((await call(url,'/api/hq/bank',undefined,mod)).status,200,'Moderators can manage treasury without separate clan approval');
   assert.equal((await call(url,'/api/hq/bank',undefined,coleader)).status,200);
   const taxes=(await call(url,taxPath,undefined,mod)).data;
   assert.equal(taxes.month,monthNow());
@@ -82,11 +82,11 @@ test('Co-Leader and Mods manage monthly taxes and giveaways, never the treasury 
   assert.equal((await call(url,taxPath,{month:taxes.month,user_id:id,paid:true},mod)).data.unchanged,true);
   const bankBefore=(await call(url,'/api/hq/bank',undefined,owner)).data.balance_milli;
   assert.equal(bankBefore,0,'Checking paid must never generate a bank deposit');
-  assert.equal((await call(url,taxPath,{month:taxes.month,user_id:id,paid:false},coleader)).status,200);
-  assert.equal((await call(url,taxPath,{month:taxes.month,user_id:id,paid:true},coleader)).status,200);
+  assert.equal((await call(url,taxPath,{month:taxes.month,user_id:id,paid:false},owner)).status,200);
+  assert.equal((await call(url,taxPath,{month:taxes.month,user_id:id,paid:true},owner)).status,200);
   assert.equal((await call(url,'/api/hq/bank',undefined,owner)).data.balance_milli,bankBefore);
   assert.equal((await call(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'1',note:'Not allowed'},coleader)).status,403);
-  assert.equal((await call(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'1',note:'Not allowed'},mod)).status,403);
+  assert.equal((await call(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'0',note:'Invalid amount'},mod)).status,400);
 
   const giveaway={
    title:'Co-Leader Giveaway',description:'Giveaway by a Co-Leader',
@@ -94,21 +94,22 @@ test('Co-Leader and Mods manage monthly taxes and giveaways, never the treasury 
    winner_count:1,visibility:'clan',ends_at:new Date(Date.now()+3600000).toISOString()
   };
   assert.equal((await call(url,'/api/hq/giveaways',giveaway,member)).status,403);
-  const g=await call(url,'/api/hq/giveaways',giveaway,coleader);
+  assert.equal((await call(url,'/api/hq/giveaways',giveaway,coleader)).status,403);
+  const g=await call(url,'/api/hq/giveaways',giveaway,mod);
   assert.equal(g.status,201,JSON.stringify(g.data));
   assert.equal((await call(url,'/api/hq/giveaways/'+g.data.id+'/enter',{},member)).status,200);
   const db=new DatabaseSync(path.join(dir,'hub.sqlite'));
   db.prepare('UPDATE clan_giveaways SET ends_at=? WHERE id=?').run(new Date(Date.now()-1000).toISOString(),g.data.id);
   db.close();
   assert.equal((await call(url,'/api/hq/giveaways/'+g.data.id,undefined,member)).data.giveaway.status,'drawn');
-  assert.equal((await call(url,'/api/hq/giveaways/'+g.data.id+'/fulfill',{note:'Übergabe bestätigt'},coleader)).status,200);
-  const g2=await call(url,'/api/hq/giveaways',{...giveaway,title:'Cancel this one'},coleader);
+  assert.equal((await call(url,'/api/hq/giveaways/'+g.data.id+'/fulfill',{note:'Übergabe bestätigt'},mod)).status,200);
+  const g2=await call(url,'/api/hq/giveaways',{...giveaway,title:'Cancel this one'},mod);
   assert.equal(g2.status,201);
-  assert.equal((await call(url,'/api/hq/giveaways/'+g2.data.id+'/cancel',{note:'Abgebrochen'},coleader)).status,200);
+  assert.equal((await call(url,'/api/hq/giveaways/'+g2.data.id+'/cancel',{note:'Abgebrochen'},mod)).status,200);
 
   assert.equal((await call(url,'/api/hq/clan/members',{handle:'TaxOwner',clan:'remove'},coleader)).status,403);
   assert.equal((await call(url,'/api/hq/clan/members',{handle:'TaxCoLead',clan:'remove'},coleader)).status,403);
-  assert.equal((await call(url,'/api/hq/clan/members',{handle:'TaxMember',clan:'remove'},coleader)).status,200);
+  assert.equal((await call(url,'/api/hq/clan/members',{handle:'TaxMember',clan:'remove'},mod)).status,200);
   const historical=(await call(url,taxPath,undefined,owner)).data.rows.find(x=>x.user_id===id);
   assert.equal(historical.paid,1);
   assert.equal(historical.still_member,0,'History survives leaving the clan');
@@ -132,7 +133,7 @@ test('Clanbank monthly tax subpage, owner Co-Leader UI, and permission restricti
  for(const id of ['bankTaxPanel','bankTaxList','bankTaxMonth','bankTaxSummary','bankTaxRefresh','bankTaxJump'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(html,/value="coleader"/);
- assert.match(html,/Co-Leader · Clanleitung \+ Giveaways \+ Steuern/);
+ assert.match(html,/Co-Leader · Clanrang ohne Verwaltungsrechte/);
  assert.match(js,/function renderMonthlyTaxes/);
  assert.match(js,/Steuern Mainclan/);
  assert.match(js,/Steuern 2\. Clan/);

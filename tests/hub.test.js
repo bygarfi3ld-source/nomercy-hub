@@ -26,7 +26,7 @@ test('privater Hub: Zugangsschutz, keine Demo-Events, Accounts und Events', {tim
   const auth='Basic '+Buffer.from('nomercy:only-for-the-automated-test').toString('base64');
   const server=spawn(process.execPath,['server.js'], {
     cwd:path.resolve(__dirname,'..'),
-    env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,TEST_ACCESS_USER:'nomercy',TEST_ACCESS_PASSWORD:'only-for-the-automated-test',SITE_PREVIEW_LOCK:'1',NODE_ENV:'production'},
+    env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,TEST_ACCESS_USER:'nomercy',TEST_ACCESS_PASSWORD:'only-for-the-automated-test',SITE_PREVIEW_LOCK:'1',NODE_ENV:'production',ADMIN_BOOTSTRAP_TOKEN:'isolated-hub-test-owner-token-2026'},
     stdio:['ignore','pipe','pipe']
   });
   let log='';server.stderr.on('data',b=>{log+=b.toString()});
@@ -55,6 +55,7 @@ test('privater Hub: Zugangsschutz, keine Demo-Events, Accounts und Events', {tim
     const cookie=registration.headers.get('set-cookie').split(';')[0];
     const me=await (await req('/api/me',{headers:{Cookie:cookie}})).json();
     assert.equal(me.user.handle,'Tester_01');
+    assert.equal((await json('/api/admin/claim',{token:'isolated-hub-test-owner-token-2026'},cookie)).status,200);
     const upcoming=new Date(Date.now()+3600000).toISOString();
     const created=await json('/api/events',{
       title:'Offenes Overworld FFA',type:'FFA',dimension:'Overworld',mc_host:'ByGarfi3ld',note:'PvP ist erlaubt und Items können verloren gehen.',max_players:20,starts_at:upcoming,duration_minutes:90
@@ -91,7 +92,7 @@ test('öffentlicher Hub: Lesen ohne Login, Schreiben nur mit Hub-Konto', {timeou
  const server=spawn(process.execPath,['server.js'], {
   cwd:path.resolve(__dirname,'..'),
   env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,NODE_ENV:'production',
-   TEST_ACCESS_PASSWORD:'unused-but-still-set-preview-password',SITE_PREVIEW_LOCK:'0'},
+   TEST_ACCESS_PASSWORD:'unused-but-still-set-preview-password',SITE_PREVIEW_LOCK:'0',ADMIN_BOOTSTRAP_TOKEN:'isolated-hub-test-owner-token-2026'},
   stdio:['ignore','pipe','pipe']
  });
  let log='';server.stderr.on('data',b=>{log+=b.toString()});
@@ -117,7 +118,9 @@ test('öffentlicher Hub: Lesen ohne Login, Schreiben nur mit Hub-Konto', {timeou
   const register=await post('/api/register',{handle:'PublicTester',password:'strong-test-password-2026'});
   assert.equal(register.status,201,'Konto muss angelegt werden können');
   const cookie=register.headers.get('set-cookie').split(';')[0];
-  assert.equal((await post('/api/events',event,cookie)).status,201,'Account darf Event erstellen');
+  assert.equal((await post('/api/events',event,cookie)).status,403,'Normales Konto darf keine Events erstellen');
+  assert.equal((await post('/api/admin/claim',{token:'isolated-hub-test-owner-token-2026'},cookie)).status,200);
+  assert.equal((await post('/api/events',event,cookie)).status,201,'Owner darf Event erstellen');
   assert.equal((await fetch(url+'/api/events')).status,200,'Auch nach Erstellung öffentlich lesbar');
   assert.equal((await post('/api/events/1/join',{})).status,401,'Teilnahme benötigt Konto');
   assert.equal((await post('/api/events/1/report',{reason:'Irreführendes Event',details:'Hinreichend langer Hinweistext',confirm_truth:true})).status,401,'Meldung benötigt Konto');

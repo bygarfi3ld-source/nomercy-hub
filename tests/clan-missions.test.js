@@ -61,7 +61,8 @@ test('Clan-Aufträge: access, scope, member workflow, leader review, rights, aud
   const id=created.data.id;const item=api+'/'+id;
   assert.equal((await request(url,api,undefined,stranger)).status,403);
   assert.equal((await request(url,api,undefined,member)).data.missions[0].title,base.title);
-  assert.equal((await request(url,api,undefined,lead)).data.missions[0].clan_scope,'clan3','Staff can oversee different clans');
+  assert.equal((await request(url,api,undefined,lead)).data.missions.length,0,'Co-Leader is a member and cannot oversee another clan');
+  assert.equal((await request(url,api,undefined,mod)).data.missions[0].clan_scope,'clan3','Moderation can oversee different clans');
   assert.equal((await request(url,item+'/join',{},owner)).status,403,'Nonmember owner cannot self-join');
   assert.equal((await request(url,item+'/join',{},lead)).status,403,'Clan2 user cannot take Clan3 task');
   assert.equal((await request(url,item+'/join',{},stranger)).status,403);
@@ -75,10 +76,10 @@ test('Clan-Aufträge: access, scope, member workflow, leader review, rights, aud
   const me=(await request(url,api,undefined,member)).data.missions[0];
   assert.equal(me.my_status,'submitted');
   assert.equal(me.claims,undefined,'Other member evidence is not exposed');
-  const staffView=(await request(url,api,undefined,lead)).data.missions[0];
+  const staffView=(await request(url,api,undefined,mod)).data.missions[0];
   assert.equal(staffView.claims.length,1);
   const target=staffView.claims[0].user_id;
-  assert.equal((await request(url,item+'/review',{user_id:target,decision:'revise',note:'Bitte Übergabe bestätigen lassen'},lead)).status,200);
+  assert.equal((await request(url,item+'/review',{user_id:target,decision:'revise',note:'Bitte Übergabe bestätigen lassen'},mod)).status,200);
   assert.equal((await request(url,api,undefined,member)).data.missions[0].my_status,'joined');
   assert.match((await request(url,api,undefined,member)).data.missions[0].my_review_note,/Übergabe/);
   assert.equal((await request(url,item+'/submit',{note:'Übergabe ist bestätigt.'},member)).status,200);
@@ -90,7 +91,7 @@ test('Clan-Aufträge: access, scope, member workflow, leader review, rights, aud
   assert.equal((await request(url,item+'/leave',{},member)).status,409,'Approved completion stays intact');
   assert.equal((await request(url,item+'/join',{},member)).status,409);
 
-  const all=await request(url,api,{...base,title:'Clanbasis reparieren',clan_scope:'all',slots:1},lead);
+  const all=await request(url,api,{...base,title:'Clanbasis reparieren',clan_scope:'all',slots:1},owner);
   assert.equal(all.status,201,JSON.stringify(all.data));const other=api+'/'+all.data.id;
   assert.equal((await request(url,other+'/join',{},lead)).status,200);
   assert.equal((await request(url,other+'/join',{},member)).status,409,'Limited mission slots enforced');
