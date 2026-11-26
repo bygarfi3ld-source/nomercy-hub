@@ -37,7 +37,7 @@ function initClanBank({db,json,readBody,errors,requireUser,checkRate,now}) {
   if(!Number.isSafeInteger(milli)||(!allowZero&&milli===0))bad('Betrag muss größer als null sein.');
   return milli;
  };
- const validateNote=(v)=>{const s=trim(v,400);if(s.length<8||s.length>400)bad('Eine Begründung mit 8 bis 400 Zeichen ist erforderlich.');return s;};
+ const validateNote=(v)=>{const s=trim(v,400);if(!s||s.length>400)bad('Bitte eine Begründung angeben (max. 400 Zeichen).');return s;};
  const validateId=(v)=>{const id=Number(v);if(!Number.isSafeInteger(id)||id<1)bad('Ungültige Antragsnummer.');return id;};
  const balance=()=>db.prepare('SELECT balance_milli FROM clan_bank_account WHERE id=1').get().balance_milli;
  const logAction=(u,action,id,details)=>db.prepare('INSERT INTO clan_hq_audit(actor_id,action,object_id,details,created_at) VALUES(?,?,?,?,?)').run(u.id,action,id,details,now());
@@ -68,7 +68,7 @@ function initClanBank({db,json,readBody,errors,requireUser,checkRate,now}) {
   if(p==='/api/hq/bank/requests'){
    const u=access(req);checkRate(req,'bank-request',8,3600000);
    const b=await readBody(req),title=trim(b.title,100),reason=trim(b.reason,600),value=amount(b.amount);
-   if(title.length<5||title.length>100||reason.length<15||reason.length>600)bad('Titel (5–100 Zeichen) und Begründung (15–600 Zeichen) erforderlich.');
+   if(!title||title.length>100||!reason||reason.length>600)bad('Titel und Begründung angeben (max. 100 bzw. 600 Zeichen).');
    const id=Number(db.prepare('INSERT INTO clan_bank_requests(user_id,title,reason,amount_milli,created_at) VALUES(?,?,?,?,?)').run(u.id,title,reason,value,now()).lastInsertRowid);
    return json(res,201,{id,status:'open'});
   }
