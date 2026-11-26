@@ -9,11 +9,11 @@ const net=require('node:net');
 const path=require('node:path');
 const token='only-for-full-smoke-testing-do-not-use-in-production-2026';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function boot(dir){
+async function boot(dir, extraEnv={}){
  const probe=net.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));
  const port=probe.address().port;await new Promise(r=>probe.close(r));
  const url='http://127.0.0.1:'+port;
- const child=spawn(process.execPath,['server.js'],{cwd:path.join(__dirname,'..'),env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,NODE_ENV:'development',SITE_PREVIEW_LOCK:'0',ADMIN_BOOTSTRAP_TOKEN:token},stdio:['ignore','pipe','pipe']});
+ const child=spawn(process.execPath,['server.js'],{cwd:path.join(__dirname,'..'),env:{...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:dir,NODE_ENV:'development',SITE_PREVIEW_LOCK:'0',ADMIN_BOOTSTRAP_TOKEN:token,...extraEnv},stdio:['ignore','pipe','pipe']});
  let logs='';child.stderr.on('data',x=>logs+=x);
  for(let i=0;i<100;i++){if(child.exitCode!==null)break;try{const r=await fetch(url+'/healthz');if(r.ok)return {url,child};}catch{}await sleep(100);}
  child.kill();throw Error('Test server did not start: '+logs);
@@ -114,4 +114,32 @@ test('UX smoke: existing-member CTA, quiet transitions, skeletons and no arbitra
  assert.match(css,/\.tab-panel \.sectionhead.*animation:none!important/);
  assert.doesNotMatch(html,/<textarea[^>]*minlength=/);
  assert.doesNotMatch(js,/<textarea[^>]*minlength=/);
+});
+
+test('Railway operator recovery: resets only one existing account, revokes sessions, preserves role, runs once', {timeout:30000},async()=>{
+ const dir=mkdtempSync(path.join(tmpdir(),'nomercy-recovery-smoke-'));let server;
+ const stop=async()=>{if(!server)return;server.child.kill('SIGTERM');await Promise.race([new Promise(r=>server.child.once('exit',r)),sleep(1300)]);server=null;};
+ const recoveryPassword='fresh-local-test-password-not-for-production-2026';
+ const env={NOMERCY_BYGARFI3LD_RECOVERY_PASSWORD:recoveryPassword};
+ try {
+  server=await boot(dir);
+  const original=await register(server.url,'ByGarfi3ld');
+  const unrelated=await register(server.url,'UnrelatedUser');
+  assert.equal((await request(server.url,'/api/admin/claim',{token},original)).status,200);
+  assert.equal((await request(server.url,'/api/me',undefined,original)).data.user.role,'admin');
+  await stop();
+  server=await boot(dir,env);
+  assert.equal((await request(server.url,'/api/login',{handle:'ByGarfi3ld',password:'long-unique-test-password-ByGarfi3ld'})).status,401);
+  assert.equal((await request(server.url,'/api/me',undefined,original)).data.user,null);
+  assert.equal((await request(server.url,'/api/me',undefined,unrelated)).data.user.handle,'UnrelatedUser');
+  const renewed=await request(server.url,'/api/login',{handle:'ByGarfi3ld',password:recoveryPassword});
+  assert.equal(renewed.status,200);
+  assert.equal((await request(server.url,'/api/me',undefined,renewed.cookie)).data.user.role,'admin');
+  await stop();
+  server=await boot(dir,env);
+  assert.equal((await request(server.url,'/api/me',undefined,renewed.cookie)).data.user.role,'admin','Already applied recovery should not log everyone out on future starts');
+  const db=new DatabaseSync(path.join(dir,'hub.sqlite'));
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM operator_recovery_log').get().n,1);
+  db.close();
+ }finally{await stop();rmSync(dir,{recursive:true,force:true});}
 });
