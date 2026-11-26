@@ -19,8 +19,9 @@ test('Unapproved or incomplete personal information never publishes an Impressum
  assert.equal(legalConfig({...sample,NOMERCY_LEGAL_STREET:''}),null);
  assert.equal(legalConfig({...sample,NOMERCY_LEGAL_EMAIL:'not-an-email'}),null);
  assert.equal(legalConfig({...sample,NOMERCY_LEGAL_NAME:'X\r\nBad Header'}),null);
- assert.equal(legalPage('/impressum.html',sample),null,'Draft texts cannot be published');
- assert.equal(legalPage('/datenschutz.html',sample),null,'Incomplete privacy texts cannot be published');
+ assert.match(legalPage('/impressum.html',sample),/Beispiel Betreiber/,'Approved templates use private values');
+ assert.match(legalPage('/datenschutz.html',sample),/contact@example.invalid/,'Approved privacy notice uses private values');
+ assert.equal(legalPage('/impressum.html',{...sample,NOMERCY_LEGAL_PUBLISH:'0'}),null,'No disclosure until operator explicitly approves publication');
 });
 
 test('Reviewed legal templates render only server-side and escape injected markup',()=>{
