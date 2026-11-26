@@ -81,8 +81,9 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
  const clean=(v,max=160)=>typeof v==='string'?v.trim().slice(0,max):'';
  const fail=(message)=>{throw errors(400,message)};
  const runAtomic=(fn)=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
- const isStaff=(u)=>!!u&&['admin','moderator'].includes(u.role);
- const canManageEvents=(u)=>!!u&&['admin','moderator','event_manager'].includes(u.role);
+ const isStaff=(u)=>!!u&&['admin','coleader','moderator'].includes(u.role);
+ const clanLeader=(req)=>{const u=requireUser(req);if(!['admin','coleader'].includes(u.role))throw errors(403,'Nur Clanleitung und Co-Leader dürfen Clanmitglieder verwalten.');return u;};
+ const canManageEvents=(u)=>!!u&&['admin','coleader','moderator','event_manager'].includes(u.role);
  const membership=(u)=>{
   if(!u)return null;
   const m=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(u.id);
@@ -156,7 +157,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   if(p==='/api/hq/clan/requests'){
    if(m==='GET'){
     const u=requireUser(req);
-    if(u.role==='admin'){
+    if(['admin','coleader'].includes(u.role)){
      const requests=db.prepare(`SELECT r.id,r.user_id,u.handle,r.mc_name,r.desired_clan,r.message,
        r.request_type,r.status,r.created_at,r.updated_at,r.review_note,a.handle AS reviewed_by_handle
        FROM clan_join_requests r JOIN users u ON u.id=r.user_id
@@ -193,7 +194,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   }
   const applicationReview=p.match(/^\/api\/hq\/clan\/requests\/(\d+)\/review$/);
   if(applicationReview){
-   postOnly(m);const admin=requireStaff(req,true);checkRate(req,'hq-clan-review',35,3600000);
+   postOnly(m);const admin=clanLeader(req);checkRate(req,'hq-clan-review',35,3600000);
    const id=safeId(applicationReview[1]),b=await readBody(req),decision=b.decision,clan=b.clan,note=clean(b.note,400);
    if(!['approve','reject'].includes(decision)||!note||(decision==='approve'&&!['main','clan2','clan3'].includes(clan)))
     fail('Entscheidung, Clan und eine Begründung angeben.');
@@ -224,11 +225,11 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   }
   if(p==='/api/hq/clan/members'){
    if(m==='GET'){
-    requireStaff(req,true);
+    clanLeader(req);
     return json(res,200,{members:db.prepare(`SELECT u.handle,cm.clan,cm.approved_at FROM clan_memberships cm JOIN users u ON u.id=cm.user_id
      ORDER BY cm.approved_at DESC LIMIT 300`).all()});
    }
-   postOnly(m);const staff=requireStaff(req,true);checkRate(req,'hq-members',20,3600000);
+   postOnly(m);const staff=clanLeader(req);checkRate(req,'hq-members',20,3600000);
    const b=await readBody(req),handle=clean(b.handle,20),clan=b.clan;
    if(!/^[A-Za-z0-9_]{3,20}$/.test(handle)||!['main','clan2','clan3','remove'].includes(clan))fail('Hub-Benutzername und Clan auswählen.');
    const target=db.prepare('SELECT id,role FROM users WHERE handle=?').get(handle);
@@ -236,6 +237,8 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    // Removing clan membership does not delete the Hub account, but must revoke all private privileges.
    // Protect the owner account from accidental self-lockout.
    if(clan==='remove'&&target.role==='admin')throw errors(403,'Admin-Konten können hier nicht aus dem Clan entfernt werden.');
+   if(target.role==='coleader'&&staff.role!=='admin')throw errors(403,'Nur der Owner darf den Clanrang eines anderen Co-Leaders ändern.');
+   if(clan==='remove'&&target.id===staff.id)throw errors(403,'Du kannst deinen eigenen Clan-Zugang hier nicht entfernen.');
    runAtomic(()=>{
     const current=db.prepare('SELECT clan FROM clan_memberships WHERE user_id=?').get(target.id)?.clan||null;
     if(clan==='remove'&&!current)throw errors(409,'Dieses Konto hat keinen aktiven Clan-Zugang.');
@@ -246,7 +249,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
     if(clan==='remove'){
      db.prepare('DELETE FROM clan_memberships WHERE user_id=?').run(target.id);
      // A former member must not keep moderation or event-team capabilities.
-     if(['moderator','event_manager'].includes(target.role))
+     if(['coleader','moderator','event_manager'].includes(target.role))
       db.prepare("UPDATE users SET role='member' WHERE id=?").run(target.id);
      // Remove ongoing private entries; completed historical giveaway results remain unchanged.
      db.prepare(`DELETE FROM clan_giveaway_entries WHERE user_id=? AND giveaway_id IN
