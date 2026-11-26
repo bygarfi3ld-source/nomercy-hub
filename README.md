@@ -4,23 +4,6 @@
 
 ## Aktuelle Zugriffsrechte (26.11.2026)
 
-### Discord-Konto bestätigen
-
-Angemeldete Nutzer können im Konto oder unter Bewerbungen **Discord verbinden** wählen. Die Moderation sieht anschließend bei Hub-Anträgen die bestätigte Discord-ID sowie die Namen zum Verbindungszeitpunkt. Nur die feste ID ist ein zuverlässiger Vergleich mit dem bekannten Discord-Mitglied; Anzeigenamen sind frei wählbar. Ein Discord-Konto kann gleichzeitig nur einem Hub-Konto zugeordnet sein. Die Verbindung bestätigt weder den Minecraft-Namen noch den Clanrang und vergibt keine Rechte. Manuelle Freigaben bleiben erforderlich. Eingetippte Discord-Namen bleiben ausdrücklich unverifiziert.
-
-Einmalige Einrichtung im [Discord Developer Portal](https://discord.com/developers/applications):
-
-1. Eine eigene Anwendung für den Hub anlegen. Den bestehenden Ticket-Bot dafür nicht ändern.
-2. Unter **OAuth2 → Redirects** exakt `https://nomercy-mc.net/api/discord/callback` hinzufügen und speichern.
-3. Die öffentliche **Application ID / Client ID** als Railway-Servicevariable `NOMERCY_DISCORD_CLIENT_ID` setzen und neu bereitstellen. Für eine andere produktive Domain zusätzlich `NOMERCY_DISCORD_REDIRECT_URI` auf deren HTTPS-Callback setzen und dieselbe URL bei Discord registrieren. Nie aus Host-Headern oder Benutzerparametern ableiten.
-4. Im Hub anmelden, **Discord verbinden** wählen, auf Discord zustimmen und im Hub den bestätigten Status prüfen. Danach mit einem Mod-Konto die Anzeige des Antrags kontrollieren.
-
-Der Code verwendet den Authorization-Code-Flow mit S256-PKCE und ausschließlich `identify`. Laut [Discord-OAuth2-Dokumentation](https://docs.discord.com/developers/topics/oauth2) ist beim Codeaustausch mit S256-PKCE keine Client-Secret-Authentifizierung erforderlich. Es werden kein Bot-Token und kein Client Secret benötigt. Keine E-Mail, Nachrichten, Serverliste oder Serverrollen werden angefordert. Zugriffstoken und Refresh-Token werden nicht gespeichert. Kurzlebiger State und PKCE-Verifier bleiben im Arbeitsspeicher, sind einmalig und an die bestehende Hub-Sitzung gebunden. Ein Serverneustart bricht offene Verbindungen ab; Nutzer starten dann erneut. Erfolgreiche Zuordnungen liegen persistent im vorhandenen SQLite-Volume und werden durch die bestehenden verschlüsselten Sicherungen erfasst. **Verbindung entfernen** löscht die aktuelle Zuordnung und verwirft offene Versuche. Es ändert keine zuvor manuell vergebenen Clanrechte.
-
-Ohne gültige Client-ID bleibt die Verbindung deaktiviert und die Oberfläche zeigt den noch ausstehenden Einrichtungsschritt. Die übrigen Hub-Funktionen bleiben nutzbar. Die automatischen Tests prüfen den OAuth-Ablauf mit simulierten Discord-Antworten; die echte Autorisierung muss nach Einrichtung zusätzlich einmal geprüft werden.
-
-### Rollen und Funktionen
-
 | Aktion | Berechtigte Konten |
 | --- | --- |
 | Teamrollen vergeben und entziehen | Nur Owner (`admin`) |

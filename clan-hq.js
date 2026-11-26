@@ -2,7 +2,7 @@
 // NoMercy Clan HQ: separate tables; no alteration/removal of legacy event data.
 const crypto = require('node:crypto');
 
-function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,now,discordIdentity=()=>null}) {
+function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,now}) {
  db.exec(`CREATE TABLE IF NOT EXISTS clan_memberships (
    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
    clan TEXT NOT NULL CHECK(clan IN ('main','clan2','clan3')),
@@ -179,7 +179,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   const p=url.pathname,m=req.method;
   if(p==='/api/hq/me'){
    getOnly(m);
-   return json(res,200,{user:viewer?{...viewer,clan:membership(viewer),discord:discordIdentity(viewer.id)}:null});
+   return json(res,200,{user:viewer?{...viewer,clan:membership(viewer)}:null});
   }
   if(p==='/api/hq/clan/requests'){
    if(m==='GET'){
@@ -190,7 +190,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
        FROM clan_join_requests r JOIN users u ON u.id=r.user_id
        LEFT JOIN users a ON a.id=r.reviewed_by
        ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END,r.updated_at DESC LIMIT 200`).all();
-     return json(res,200,{requests:requests.map(request=>({...request,discord:discordIdentity(request.user_id)}))});
+     return json(res,200,{requests});
     }
     const mine=db.prepare(`SELECT id,mc_name,desired_clan,message,request_type,status,created_at,updated_at,review_note
       FROM clan_join_requests WHERE user_id=?`).get(u.id)||null;

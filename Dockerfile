@@ -5,7 +5,6 @@ WORKDIR /app
 COPY server.js ./server.js
 COPY clan-hq.js ./clan-hq.js
 COPY clan-bank.js ./clan-bank.js
-COPY discord-auth.js ./discord-auth.js
 COPY backup.js ./backup.js
 COPY legal-pages.js ./legal-pages.js
 COPY legal-notices.js ./legal-notices.js
