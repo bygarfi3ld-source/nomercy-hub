@@ -32,6 +32,6 @@ test('Admin can manage roles from Clan Team; backend remains admin restricted',(
  assert.match(js,/async function loadTeamRoles\(\)/);
  assert.match(server,/p==='\/api\/admin\/team' && method==='POST'/);
  assert.match(server,/requireStaff\(req,true\)/);
- assert.match(server,/\['moderator','event_manager','member'\]/);
+ assert.match(server,/\['coleader','moderator','event_manager','member'\]/);
  assert.match(server,/target\.role==='admin'/);
 });
