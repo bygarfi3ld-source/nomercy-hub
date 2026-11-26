@@ -7,6 +7,7 @@ COPY clan-hq.js ./clan-hq.js
 COPY clan-bank.js ./clan-bank.js
 COPY backup.js ./backup.js
 COPY legal-pages.js ./legal-pages.js
+COPY legal-notices.js ./legal-notices.js
 COPY public ./public
 # /data is mounted as a persistent volume in production (see README)
 EXPOSE 3030
