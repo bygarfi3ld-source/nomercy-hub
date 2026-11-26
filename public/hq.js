@@ -89,7 +89,7 @@ function renderMarket(){const q=$('#marketSearch').value.trim().toLowerCase(),fi
  $('#marketList').innerHTML=list.length?list.map(x=>{
  const pill=x.kind==='offer'?'VERKAUF':x.kind==='search'?'SUCHE':'SERVICE';
  return `<article class="tile"><div class="tile-top"><span class="pill ${x.kind==='offer'?'red':''}">${pill}</span><span class="meta">#${x.id}</span></div><h3>${esc(x.title)}</h3><p class="desc">${esc(x.description)}</p><div class="price">${x.price_millions?esc(x.price_millions.toLocaleString('de-DE'))+' Mio.':'VB'}</div><div class="meta">Kontakt ingame: <b>${esc(x.mc_contact)}</b><br>Erstellt von ${esc(x.creator_handle)} · ${date(x.created_at)}</div><div class="actions">
-  <button class="btn outline" data-market="copy" data-id="${x.id}">Kontakt kopieren</button>${x.is_owner?`<button class="btn outline" data-market="close" data-id="${x.id}">Erledigt</button>`:''}${state.user&&!x.is_owner?`<button class="btn outline" data-market="report" data-id="${x.id}">Melden</button>`:''}</div></article>`;
+  <button class="btn outline" data-market="copy" data-id="${x.id}">Kontakt kopieren</button><a class="btn outline" href="/melden.html?link=%2F%23market" title="Rechtswidrigen Inhalt auch ohne Anmeldung melden">Rechtswidrig melden</a>${x.is_owner?`<button class="btn outline" data-market="close" data-id="${x.id}">Erledigt</button>`:''}${state.user&&!x.is_owner?`<button class="btn outline" data-market="report" data-id="${x.id}">Melden</button>`:''}</div></article>`;
  }).join(''):'<div class="empty"><strong>Keine Anzeigen gefunden.</strong>Noch ist es hier ruhig. Erstelle die erste echte Anzeige für die HugoSMP-Community.</div>';
 }
 async function loadPrivate(){const started=performance.now();setSkeleton('#giveawayList',2);if(eventMember())setSkeleton('#eventList',2);
@@ -335,6 +335,17 @@ async function loadTeam(){if(!staff())return;
    </article>`).join(''):'<div class="empty">Noch keine bearbeiteten Clan-Bewerbungen.</div>';
   $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small>${(state.user.role==='admin'||!['admin','coleader'].includes(u.role))?(u.clan==='clan3'?`<button type="button" class="btn outline" data-clan-promote="clan2" data-handle="${esc(u.handle)}">⬆ Zu Clan 2 befördern</button>`:u.clan==='clan2'?`<button type="button" class="btn primary" data-clan-promote="main" data-handle="${esc(u.handle)}">👑 In den Mainclan befördern</button>`:'')+`${u.role==='admin'?'':`<button type="button" class="btn outline clan-remove-btn" data-clan-remove data-handle="${esc(u.handle)}" aria-label="${esc(u.handle)} aus dem Clan entfernen">✕ Aus Clan entfernen</button>`}`:'<small>Nur Owner darf diese Leitung verwalten</small>'}</div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';finishSkeleton('#memberList');finishSkeleton('#clanApplications');finishSkeleton('#clanApplicationsHistory');
  }
+ const noticeResult=await api('/api/admin/content-notices');
+ const notices=Array.isArray(noticeResult.notices)?noticeResult.notices:[];
+ $('#legalNotices').innerHTML=notices.filter(n=>n.status==='open').length?
+ notices.filter(n=>n.status==='open').map(n=>
+ '<article class="tile mod-report-card"><strong>NM-'+n.id+' · '+esc(n.category)+'</strong>'+
+ '<p class="desc">Fundstelle: <a href="'+esc(n.content_url)+'" target="_blank" rel="noopener noreferrer">'+esc(n.content_url)+'</a></p>'+
+ '<p class="desc">'+esc(n.reason)+'</p><p class="meta">Von '+esc(n.reporter_name)+' ('+esc(n.reporter_email)+') · '+date(n.created_at)+'</p>'+
+ '<label>Bearbeitung und Begründung <textarea id="legal-note-'+n.id+'" maxlength="500" placeholder="Was wurde konkret geprüft?"></textarea></label>'+
+ '<div class="actions"><button class="btn primary" data-legal-review="reviewed" data-id="'+n.id+'">Prüfung dokumentieren</button>'+
+ '<button class="btn outline" data-legal-review="dismissed" data-id="'+n.id+'">Meldung verwerfen</button></div>'+
+ '<p class="muted">Bei beanstandeten Markt-Inseraten separat über die Marktmoderation ausblenden. Rückmeldung an den Melder ggf. per E-Mail senden.</p></article>').join(''):'<p class="muted">Keine offenen rechtlichen Inhaltsmeldungen.</p>';
  const data=await api('/api/hq/mod/market');state.reports=data.reports;
  $('#marketReports').innerHTML=data.reports.filter(r=>r.status==='open').length?data.reports.filter(r=>r.status==='open').map(r=>`<div class="tile mod-report-card"><strong>${esc(r.listing_title)} · #${r.listing_id}</strong><p class="desc">${esc(r.reason)}</p><small>Von ${esc(r.reporter)} · ${date(r.created_at)}</small><label class="tag">Begründung<textarea id="report-note-${r.id}" maxlength="400"></textarea></label><div class="actions"><button class="btn outline" data-review="dismissed" data-id="${r.id}">Verwerfen</button><button class="btn primary" data-review="reviewed" data-id="${r.id}">Prüfung speichern</button><button class="btn outline" data-hide-listing="${r.listing_id}" data-note-id="report-note-${r.id}">Inserat ausblenden</button></div></div>`).join(''):'<p class="muted">Keine offenen Markt-Meldungen.</p>';finishSkeleton('#marketReports');
 }
@@ -651,6 +662,12 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
     await api(`/api/hq/clan/requests/${id}/review`,{decision,clan,note,verified_existing:verifiedExisting});await loadTeam();toast(decision==='approve'?'Clan-Mitglied freigeschaltet.':'Anfrage abgelehnt.');});return;
  }
  const bankDecision=e.target.closest('[data-bank-decision]');if(bankDecision){showBankDecisionForm(Number(bankDecision.dataset.id),bankDecision.dataset.bankDecision);return;}
+ const legalReview=e.target.closest('[data-legal-review]');
+ if(legalReview){await withAction(async()=>{
+  const id=Number(legalReview.dataset.id),note=$('#legal-note-'+id).value;
+  await api('/api/admin/content-notices/review',{id,status:legalReview.dataset.legalReview,note});
+  await loadTeam();toast('Rechtliche Meldung dokumentiert. Rückmeldung per E-Mail prüfen.');
+ });return;}
  const review=e.target.closest('[data-review]');if(review)await withAction(async()=>{const id=Number(review.dataset.id),note=$(`#report-note-${id}`).value;await api('/api/hq/mod/market/review',{id,status:review.dataset.review,note});await loadTeam();toast('Meldung bearbeitet.');});
  const hide=e.target.closest('[data-hide-listing]');if(hide)await withAction(async()=>{const note=$('#'+hide.dataset.noteId).value;await api(`/api/hq/market/${hide.dataset.hideListing}/moderate`,{status:'hidden',note});await loadTeam();await loadMarket();toast('Inserat ausgeblendet.');});
 }
