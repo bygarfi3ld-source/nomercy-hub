@@ -761,3 +761,9 @@ body[data-section]:not([data-section='market']) .memberbar{margin-bottom:21px}
 /* Privacy-first typography: device fonts only, no third-party network request. */
 :root{--font-body:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;--font-display:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
 body{font-family:var(--font-body)}
+
+/* Subtle legal navigation at the very bottom: always visible, legible and one click away. */
+.footer .footer-legal.wrap{gap:16px;padding:12px 24px 23px;border-top-color:#2b2c33}
+.footer .footer-legal a{margin:0;color:#b1b3be;font-size:12px;font-weight:500;min-height:40px;text-decoration:underline;text-decoration-color:#5f626d;text-underline-offset:4px}
+.footer .footer-legal a:hover,.footer .footer-legal a:focus-visible{color:#fff;text-decoration-color:#e2e3e7}
+@media(max-width:480px){.footer .footer-legal.wrap{gap:14px;padding:11px 16px 21px}}
