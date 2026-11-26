@@ -56,7 +56,7 @@
   <path d="M10 37 40 10" stroke="#f46b76" stroke-width="2" opacity=".95"/>
 </svg><span><strong>NoMercy<span class="red">.</span></strong><small>CLAN HQ / HUGOSMP</small></span></a>
 <nav class="nav" aria-label="Hauptnavigation"><button data-tab="market" class="active"><svg class="mini-item" viewBox="0 0 32 32" aria-hidden="true"><use href="#nm-pixel-chest"/></svg> Marktplatz</button><button data-tab="giveaways"><svg class="mini-item" viewBox="0 0 32 32" aria-hidden="true"><use href="#nm-pixel-apple"/></svg> Giveaways</button><button data-tab="events"><svg class="mini-item" viewBox="0 0 32 32" aria-hidden="true"><use href="#nm-pixel-sword"/></svg> Clan-Events</button><button data-tab="roster">Mitglieder</button><button data-tab="apply"><svg class="mini-item" viewBox="0 0 32 32" aria-hidden="true"><use href="#nm-pixel-pearl"/></svg> Bewerben</button><button data-tab="bank"><svg class="mini-item" viewBox="0 0 32 32" aria-hidden="true"><use href="#nm-pixel-emerald"/></svg> Clanbank</button><button data-tab="members" id="membersNav" hidden>Clan-Team · Admin</button></nav>
-<div class="head-actions"><a class="mod-link" href="/moderation.html" id="moderationNav" hidden>Moderation ↗</a><button class="btn ghost" id="accountBtn">Anmelden</button></div></div></header>
+<div class="head-actions"><button type="button" class="existing-access-top" id="existingAccessBtn" title="Bestehenden Clan-Zugang im Hub bestätigen lassen">✓ Schon im Clan?</button><a class="mod-link" href="/moderation.html" id="moderationNav" hidden>Moderation ↗</a><button class="btn ghost" id="accountBtn">Anmelden</button></div></div></header>
 <main>
 <section class="hero">
 <div class="wrap hero-grid">
@@ -109,7 +109,7 @@
     <div class="apply-field-row"><label>Dein Spielstil <span>*</span><select name="playstyle" required><option value="">Bitte auswählen</option><option value="PvP">⚔ PvP</option><option value="Builder">🏗 Builder</option><option value="Farming / Wirtschaft">💎 Farming / Wirtschaft</option><option value="Allrounder">✨ Allrounder</option></select></label>
      <label>Wann bist du meistens online? <span>*</span><select name="availability" required><option value="">Bitte auswählen</option><option value="Unter der Woche">Unter der Woche</option><option value="Wochenende">Wochenende</option><option value="Fast täglich">Fast täglich</option><option value="Unterschiedlich">Unterschiedlich</option></select></label></div>
     <label>Discord-Nutzername <small>optional · wird nicht verifiziert</small><input name="discord_name" maxlength="40" autocomplete="off" placeholder="z. B. spielername"></label>
-    <label>Warum willst du zu NoMercy? <span>*</span><textarea name="message" required minlength="20" maxlength="380" rows="5" placeholder="Erzähl uns von dir, deiner Erfahrung und warum du zur Crew passt …"></textarea></label>
+    <label>Warum willst du zu NoMercy? <span>*</span><textarea name="message" required maxlength="380" rows="5" placeholder="Erzähl uns von dir, deiner Erfahrung und warum du zur Crew passt …"></textarea></label>
     <p class="apply-privacy">Minecraft- und Discord-Namen werden nicht automatisch verifiziert. Bitte keine echten Namen, Adressen oder Zugangsdaten eintragen.</p>
     <button class="btn primary full" type="submit" id="applySubmit">Bewerbung absenden <span aria-hidden="true">↗</span></button>
    </form>
@@ -117,7 +117,7 @@
     <div class="apply-info"><strong>🔒 Bestehenden Clan-Zugang bestätigen</strong><p>Du bist bereits im Mainclan, Clan 2 oder Clan 3? Beantrage hier den Zugang zu dieser Website. Dein bestehender Rang muss zuerst von der Clanleitung überprüft werden.</p></div>
     <div class="apply-field-row"><label>Minecraft-Ingame-Name <span>*</span><input name="mc_name" required minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" autocomplete="off" placeholder="Dein Ingame-Name"></label><label>Dein bestehender Clan <span>*</span><select name="desired_clan" required><option value="main">👑 Mainclan – schon Mitglied</option><option value="clan2">⚔ Clan 2 – schon Mitglied</option><option value="clan3">🛡 Clan 3 – schon Mitglied</option></select></label></div>
     <label>Discord-Name <small>optional, für die Prüfung</small><input name="discord_name" maxlength="40" autocomplete="off" placeholder="Dein Discord-Name"></label>
-    <label>Wie kann die Clanleitung dich erkennen? <span>*</span><textarea name="message" required minlength="20" maxlength="380" rows="4" placeholder="Seit wann bist du im Clan? Wer kann deinen Rang bestätigen?"></textarea></label>
+    <label>Wie kann die Clanleitung dich erkennen? <span>*</span><textarea name="message" required maxlength="380" rows="4" placeholder="Seit wann bist du im Clan? Wer kann deinen Rang bestätigen?"></textarea></label>
     <p class="apply-privacy">Die Clanleitung prüft deine Angaben manuell. Eine Selbstauskunft gewährt keinen Rang. Niemals Passwörter angeben.</p>
     <button type="submit" id="accessSubmit" class="btn primary full">Hub-Zugriff prüfen lassen <span aria-hidden="true">↗</span></button>
    </form>
