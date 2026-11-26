@@ -249,7 +249,7 @@ async function loadTeam(){if(!staff())return;
    <div class="meta">Eingereicht: ${date(r.created_at)} · Bearbeitet: ${date(r.updated_at)}${r.reviewed_by_handle?' · von '+esc(r.reviewed_by_handle):''}</div>
    ${r.review_note?`<p class="desc">Entscheidung: ${esc(r.review_note)}</p>`:''}
    </article>`).join(''):'<div class="empty">Noch keine bearbeiteten Clan-Bewerbungen.</div>';
-  $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small>${u.clan==='clan3'?`<button type="button" class="btn outline" data-clan-promote="clan2" data-handle="${esc(u.handle)}">⬆ Zu Clan 2 befördern</button>`:u.clan==='clan2'?`<button type="button" class="btn primary" data-clan-promote="main" data-handle="${esc(u.handle)}">👑 In den Mainclan befördern</button>`:''}</div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';finishSkeleton('#memberList');finishSkeleton('#clanApplications');finishSkeleton('#clanApplicationsHistory');
+  $('#memberList').innerHTML=members.length?members.map(u=>`<div class="tile"><b>${esc(u.handle)}</b><span class="tag">${labelClan[u.clan]||esc(u.clan)}</span><small>${date(u.approved_at)}</small>${u.clan==='clan3'?`<button type="button" class="btn outline" data-clan-promote="clan2" data-handle="${esc(u.handle)}">⬆ Zu Clan 2 befördern</button>`:u.clan==='clan2'?`<button type="button" class="btn primary" data-clan-promote="main" data-handle="${esc(u.handle)}">👑 In den Mainclan befördern</button>`:''}<button type="button" class="btn outline clan-remove-btn" data-clan-remove data-handle="${esc(u.handle)}" aria-label="${esc(u.handle)} aus dem Clan entfernen">✕ Aus Clan entfernen</button></div>`).join(''):'<div class="empty">Noch keine Clanmitglieder freigeschaltet.</div>';finishSkeleton('#memberList');finishSkeleton('#clanApplications');finishSkeleton('#clanApplicationsHistory');
  }
  const data=await api('/api/hq/mod/market');state.reports=data.reports;
  $('#marketReports').innerHTML=data.reports.filter(r=>r.status==='open').length?data.reports.filter(r=>r.status==='open').map(r=>`<div class="tile mod-report-card"><strong>${esc(r.listing_title)} · #${r.listing_id}</strong><p class="desc">${esc(r.reason)}</p><small>Von ${esc(r.reporter)} · ${date(r.created_at)}</small><label class="tag">Begründung<textarea id="report-note-${r.id}" maxlength="400"></textarea></label><div class="actions"><button class="btn outline" data-review="dismissed" data-id="${r.id}">Verwerfen</button><button class="btn primary" data-review="reviewed" data-id="${r.id}">Prüfung speichern</button><button class="btn outline" data-hide-listing="${r.listing_id}" data-note-id="report-note-${r.id}">Inserat ausblenden</button></div></div>`).join(''):'<p class="muted">Keine offenen Markt-Meldungen.</p>';finishSkeleton('#marketReports');
@@ -466,6 +466,19 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
  const ev=e.target.closest('[data-event]');if(ev){const id=Number(ev.dataset.id);
   if(ev.dataset.event==='join')await withAction(async()=>{await api(`/api/hq/events/${id}/join`,{});await loadPrivate();toast('Event-Teilnahme aktualisiert.');});
   if(ev.dataset.event==='close')await withAction(async()=>{const note=askNote('Warum das Event schließen?');if(!note)return;await api(`/api/hq/events/${id}/status`,{status:'closed',note});await loadPrivate();toast('Event geschlossen.');});return;
+ }
+ const removeMember=e.target.closest('[data-clan-remove]');if(removeMember){
+  if(state.user?.role!=='admin')return;
+  const handle=removeMember.dataset.handle;
+  if(!confirm(handle+' wirklich aus NoMercy entfernen?\n\nDer Hub-Account bleibt bestehen, aber der Clan-Zugang, private Events/Giveaways und ggf. Mod-/Event-Rechte werden sofort entzogen.'))return;
+  await withAction(async()=>{
+   removeMember.disabled=true;
+   try{
+    await api('/api/hq/clan/members',{handle,clan:'remove'});
+    await Promise.all([loadTeam(),loadRoster()]);
+    toast(handle+' wurde aus dem Clan entfernt. Private Rechte entzogen.');
+   }finally{removeMember.disabled=false;}
+  });return;
  }
  const promote=e.target.closest('[data-clan-promote]');if(promote){
   if(!confirm(`${promote.dataset.handle} wirklich befördern? Diese Entscheidung wird protokolliert.`))return;
