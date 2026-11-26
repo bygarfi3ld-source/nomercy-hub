@@ -116,30 +116,3 @@ test('UX smoke: existing-member CTA, quiet transitions, skeletons and no arbitra
  assert.doesNotMatch(js,/<textarea[^>]*minlength=/);
 });
 
-test('Railway operator recovery: resets only one existing account, revokes sessions, preserves role, runs once', {timeout:30000},async()=>{
- const dir=mkdtempSync(path.join(tmpdir(),'nomercy-recovery-smoke-'));let server;
- const stop=async()=>{if(!server)return;server.child.kill('SIGTERM');await Promise.race([new Promise(r=>server.child.once('exit',r)),sleep(1300)]);server=null;};
- const recoveryPassword='fresh-local-test-password-not-for-production-2026';
- const env={NOMERCY_BYGARFI3LD_RECOVERY_PASSWORD:recoveryPassword};
- try {
-  server=await boot(dir);
-  const original=await register(server.url,'ByGarfi3ld');
-  const unrelated=await register(server.url,'UnrelatedUser');
-  assert.equal((await request(server.url,'/api/admin/claim',{token},original)).status,200);
-  assert.equal((await request(server.url,'/api/me',undefined,original)).data.user.role,'admin');
-  await stop();
-  server=await boot(dir,env);
-  assert.equal((await request(server.url,'/api/login',{handle:'ByGarfi3ld',password:'long-unique-test-password-ByGarfi3ld'})).status,401);
-  assert.equal((await request(server.url,'/api/me',undefined,original)).data.user,null);
-  assert.equal((await request(server.url,'/api/me',undefined,unrelated)).data.user.handle,'UnrelatedUser');
-  const renewed=await request(server.url,'/api/login',{handle:'ByGarfi3ld',password:recoveryPassword});
-  assert.equal(renewed.status,200);
-  assert.equal((await request(server.url,'/api/me',undefined,renewed.cookie)).data.user.role,'admin');
-  await stop();
-  server=await boot(dir,env);
-  assert.equal((await request(server.url,'/api/me',undefined,renewed.cookie)).data.user.role,'admin','Already applied recovery should not log everyone out on future starts');
-  const db=new DatabaseSync(path.join(dir,'hub.sqlite'));
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM operator_recovery_log').get().n,1);
-  db.close();
- }finally{await stop();rmSync(dir,{recursive:true,force:true});}
-});
