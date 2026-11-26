@@ -34,6 +34,10 @@ test('Legal links staged for final review in site footer, registration and moder
  }
  assert.ok(js.includes('/datenschutz.html'),'Registration links to privacy notice');
  assert.match(main,/Datenschutzhinweise ansehen/);
+ assert.match(main,/<nav class="footer-legal wrap" aria-label="Rechtliche Informationen">/);
+ assert.match(main,/<a href="\/impressum\.html">Impressum<\/a><a href="\/datenschutz\.html">Datenschutz<\/a>/);
+ assert.ok(!main.includes('data-tab="impressum"'),'Legal is not a main-menu tab');
+ assert.match(read('public/hq.css'),/\.footer-legal a:focus-visible/);
  const checklist=read('LAUNCH-LEGAL-RECOVERY.md');
  assert.match(checklist,/NOMERCY_BACKUP_KEY/);
  assert.match(checklist,/GitHub-2FA/);
