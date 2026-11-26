@@ -74,7 +74,7 @@ test('Clan-Aufträge: access, scope, member workflow, leader review, rights, aud
   assert.equal((await request(url,item+'/review',{user_id:4,decision:'approve',note:'Alles geprüft'},member)).status,403,'Member cannot review');
   const me=(await request(url,api,undefined,member)).data.missions[0];
   assert.equal(me.my_status,'submitted');
-  assert.equal(me.claims,undefined,'No other people's evidence exposed to members');
+  assert.equal(me.claims,undefined,'Other member evidence is not exposed');
   const staffView=(await request(url,api,undefined,lead)).data.missions[0];
   assert.equal(staffView.claims.length,1);
   const target=staffView.claims[0].user_id;
