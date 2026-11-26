@@ -256,7 +256,7 @@ async function api(req,res,url) {
  if(p==='/api/events'&&method==='POST') {
   const u=requireUser(req);checkRate(req,'events',8,3600000);const b=await readBody(req);
   const title=bounded(b.title,70),type=b.type,dimension=b.dimension,host=bounded(b.mc_host,16),note=bounded(b.note,360),max=Number(b.max_players);
-  if(title.length<5)throw errors(400,'Titel mindestens fünf Zeichen.');
+  if(!title)throw errors(400,'Bitte einen Titel eingeben.');
   if(!eventTypes.includes(type)||!dimensions.includes(dimension))throw errors(400,'Eventart oder Dimension ungültig.');
   if(!/^[A-Za-z0-9_]{3,16}$/.test(host))throw errors(400,'TPA-Ziel muss ein gültiger Minecraft-Spielername sein.');
   if(!Number.isInteger(max)||max<2||max>100)throw errors(400,'Spielerlimit zwischen 2 und 100.');
@@ -291,7 +291,7 @@ async function api(req,res,url) {
     const u=requireUser(req);checkRate(req,'report',8,3600000);if(e.is_demo)throw errors(409,'Demo-Events können nicht gemeldet werden.');
     const b=await readBody(req);const reasons=['Verdacht auf TPA-Trap','Verdacht auf Bett-/Respawn-Trap','Irreführendes Event','Beleidigung/Spam','Sonstiger Verstoß'];
     const reason=bounded(b.reason,80),details=bounded(b.details,1500),evidence=bounded(b.evidence_url,500);
-    if(!reasons.includes(reason)||details.length<15)throw errors(400,'Bitte Grund und eine Erklärung mit mindestens 15 Zeichen angeben.');
+    if(!reasons.includes(reason)||!details)throw errors(400,'Bitte Grund und eine kurze Erklärung angeben.');
     if(b.confirm_truth!==true)throw errors(400,'Bitte bestätige, dass deine Angaben nach bestem Wissen wahr sind.');
     if(evidence){try{const x=new URL(evidence);if(!['http:','https:'].includes(x.protocol))throw Error();}catch{throw errors(400,'Beweislink muss eine gültige HTTPS-/HTTP-URL sein.');}}
     try{db.prepare('INSERT INTO reports(event_id,reporter_id,reason,details,evidence_url,status,created_at) VALUES(?,?,?,?,?,?,?)').run(id,u.id,reason,details,evidence||null,'open',now());}
@@ -350,7 +350,7 @@ async function api(req,res,url) {
   const staff=requireStaff(req);checkRate(req,'moderation',60,60000);
   const b=await readBody(req);
   const id=Number(b.id), status=b.status, note=bounded(b.note,500);
-  if(!Number.isSafeInteger(id)||id<1||!['open','dismissed','reviewed'].includes(status)||note.length<8)throw errors(400,'Meldungsstatus und Begründung (mindestens 8 Zeichen) erforderlich.');
+  if(!Number.isSafeInteger(id)||id<1||!['open','dismissed','reviewed'].includes(status)||!note)throw errors(400,'Meldungsstatus und Begründung erforderlich.');
   const result=atomic(()=>{
    const r=db.prepare('SELECT * FROM reports WHERE id=?').get(id);
    if(!r)throw errors(404,'Meldung nicht gefunden');
@@ -365,7 +365,7 @@ async function api(req,res,url) {
   const staff=requireStaff(req);checkRate(req,'moderation',60,60000);
   const b=await readBody(req);
   const id=Number(b.id), status=b.status, note=bounded(b.note,500);
-  if(!Number.isSafeInteger(id)||id<1||!['open','hidden','closed'].includes(status)||note.length<8)throw errors(400,'Eventstatus und Begründung (mindestens 8 Zeichen) erforderlich.');
+  if(!Number.isSafeInteger(id)||id<1||!['open','hidden','closed'].includes(status)||!note)throw errors(400,'Eventstatus und Begründung erforderlich.');
   const result=atomic(()=>{
    const event=db.prepare('SELECT * FROM events WHERE id=?').get(id);
    if(!event||event.is_demo)throw errors(404,'Event nicht gefunden');
