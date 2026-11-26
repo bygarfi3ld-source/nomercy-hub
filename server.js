@@ -157,6 +157,38 @@ function atomic(fn) {
  try { const value=fn(); db.exec('COMMIT'); return value; }
  catch(e) { db.exec('ROLLBACK'); throw e; }
 }
+// Operator-authorized one-time account recovery. The Railway environment receives
+// only a PBKDF2 hash + salt, never the temporary plaintext password.
+// A persisted request ID prevents re-applying the reset after future restarts.
+function applyOneTimeOperatorPasswordReset() {
+ const encoded = process.env.NOMERCY_ONE_TIME_RESET_B64;
+ if (!encoded) return;
+ try {
+  const b = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+  if (!b || !/^[A-Za-z0-9_]{3,20}$/.test(b.handle)
+    || !/^[a-f0-9]{32}$/.test(b.salt)
+    || !/^[a-f0-9]{64}$/.test(b.password_hash)
+    || !/^[a-f0-9]{32}$/.test(b.request_id)) throw Error('Invalid recovery payload');
+  db.exec('CREATE TABLE IF NOT EXISTS applied_operator_resets (request_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
+  if (db.prepare('SELECT 1 FROM applied_operator_resets WHERE request_id=?').get(b.request_id)) return;
+  const account = db.prepare('SELECT id FROM users WHERE handle=?').get(b.handle);
+  if (!account) {
+   console.warn('[NoMercy] One-time owner reset not applied: account not found.');
+   return;
+  }
+  atomic(() => {
+   db.prepare('UPDATE users SET password_hash=?, salt=? WHERE id=?').run(b.password_hash,b.salt,account.id);
+   db.prepare('DELETE FROM sessions WHERE user_id=?').run(account.id);
+   db.prepare('INSERT INTO applied_operator_resets(request_id,applied_at) VALUES(?,?)').run(b.request_id,new Date().toISOString());
+  });
+  console.log('[NoMercy] One-time owner password reset completed. Account roles and clan memberships unchanged.');
+ } catch (error) {
+  console.error('[NoMercy] One-time owner password reset failed:', error.message);
+  throw error; // Never silently report a successful deploy when credentials were not reset.
+ }
+}
+applyOneTimeOperatorPasswordReset();
+
 function audit(staff, action, eventId, reportId, before, after, note='') {
  db.prepare('INSERT INTO moderation_log(moderator_id,event_id,report_id,action,previous_value,new_value,note,created_at) VALUES(?,?,?,?,?,?,?,?)')
   .run(staff.id,eventId??null,reportId??null,action,before??null,after??null,note,now());
