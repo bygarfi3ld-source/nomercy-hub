@@ -665,3 +665,50 @@ body[data-section]:not([data-section='market']) .memberbar{margin-bottom:21px}
 #memberList .tile .clan-remove-btn{margin-top:auto;border-color:#deb3b8;background:#fff9f9;color:#9b3341;font-weight:800;min-height:42px}
 #memberList .tile .clan-remove-btn:hover{background:#ffedef;border-color:#cb7582;color:#772330}
 #memberList .tile .clan-remove-btn:focus-visible{outline:2px solid #c75f70;outline-offset:2px}
+
+/* Monthly clan tax checklist: staff-only area beneath the Clanbank ledger. */
+.bank-tax-panel{margin:28px 0 0;padding:clamp(18px,3vw,30px);border:1px solid #e8dfde;border-radius:22px;background:#fff;box-shadow:0 12px 35px #18141a08}
+.bank-tax-panel[hidden],.tax-jump[hidden]{display:none!important}
+.bank-tax-panel .bank-section-header{margin-bottom:20px}
+.bank-tax-panel .bank-section-header h3{margin:8px 0;font-size:clamp(23px,3.8vw,32px);line-height:1.15}
+.bank-tax-panel .bank-section-header h3 span{color:#ae3e50}
+.bank-tax-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:14px}
+.bank-tax-toolbar label{font-size:12px;font-weight:800;display:grid;gap:7px;min-width:180px;color:#565a63}
+.bank-tax-toolbar input{min-height:44px;padding:8px 12px;background:#fbfaf9;border:1px solid #dedcdb;border-radius:10px;font:inherit;color:#17181e}
+.bank-tax-summary{font-size:13px;font-weight:650;color:#5d5e66;padding:13px 15px;background:#f8f6f5;border-radius:12px;margin:12px 0}
+.bank-tax-summary strong{font-weight:900;color:#26252a}
+.bank-tax-list{display:grid;gap:9px}
+.bank-tax-row{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:14px;background:#fff;border:1px solid #e8e4e3;border-radius:13px;cursor:pointer;transition:background .12s,border-color .12s}
+.bank-tax-row:hover{border-color:#d3abb0;background:#fdfbfb}
+.bank-tax-row.is-paid{background:#f4faf6;border-color:#cfe3d3}
+.bank-tax-row input[type=checkbox]{appearance:auto;accent-color:#248754;min-width:21px;width:21px;height:21px;cursor:pointer;flex:none}
+.bank-tax-details{display:grid;gap:4px;flex:1;min-width:125px}
+.bank-tax-details strong{color:#25252d;font-size:14px}
+.bank-tax-details small,.bank-tax-meta{color:#7b7c82;font-size:11px}
+.bank-tax-status{padding:7px 10px;background:#f7eeee;border-radius:8px;color:#a24552;font-size:11px;font-weight:900}
+.bank-tax-row.is-paid .bank-tax-status{background:#e2f2e7;color:#24683e}
+.bank-tax-meta{flex:1 1 175px;text-align:right}
+.bank-tax-hint{margin:16px 0 0;font-size:12px;color:#70727b;line-height:1.65}
+.bank-hero .tax-jump{margin-top:19px;border-color:#ffffff75;color:#fff;background:#ffffff13;max-width:100%;white-space:normal}
+.bank-hero .tax-jump:hover{background:#ffffff24}
+@media(max-width:680px){
+ .bank-tax-panel{padding:18px 14px}
+ .bank-tax-toolbar label,.bank-tax-toolbar button{width:100%}
+ .bank-tax-row{gap:10px}
+ .bank-tax-meta{text-align:left;flex-basis:100%;padding-left:34px}
+}
+@media(prefers-reduced-motion:reduce){.bank-tax-row{transition:none}}
+
+/* Each clan has its own monthly tax section and independent paid/open counts. */
+.bank-tax-list{gap:20px}
+.bank-tax-group{border:1px solid #e6e1e2;border-radius:17px;background:#fcfbfa;padding:clamp(12px,2.4vw,18px);min-width:0}
+.bank-tax-group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.bank-tax-group-head h4{font-size:clamp(17px,2.2vw,22px);font-weight:900;color:#27262d;margin:0}
+.bank-tax-group-count{font-size:11px;font-weight:700;color:#64636c;padding:9px 11px;background:#f1eeed;border-radius:10px}
+.bank-tax-group-count strong{font-weight:900;color:#242429}
+.bank-tax-group-members{display:grid;gap:9px}
+.bank-tax-group-empty{font-size:12px;color:#777982;padding:16px;border:1px dashed #ded9db;border-radius:11px}
+.bank-tax-group[data-tax-clan="main"]{border-left:4px solid #cba14a}
+.bank-tax-group[data-tax-clan="clan2"]{border-left:4px solid #667cb8}
+.bank-tax-group[data-tax-clan="clan3"]{border-left:4px solid #55907a}
+@media(max-width:680px){.bank-tax-group-head{align-items:flex-start}.bank-tax-group-count{width:100%}}

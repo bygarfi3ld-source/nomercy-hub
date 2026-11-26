@@ -14,6 +14,6 @@ test('Admin sees pending and reviewed applications and explicit count',()=>{
  assert.match(js,/const pending=requests\.filter\(r=>r\.status==='pending'\),history=requests\.filter\(r=>r\.status!=='pending'\)/);
  assert.match(js,/\$\('#clanApplicationsHistory'\)\.innerHTML/);
  assert.match(js,/\$\('#refreshClanApplicationsBtn'\)\.onclick=\(\)=>withAction\(loadTeam\)/);
- assert.match(js,/\$\('#clanApplicationsPanel'\)\.hidden=u\?\.role!=='admin'/);
+ assert.match(js,/\$\('#clanApplicationsPanel'\)\.hidden=!clanLeader\(\)/);
  assert.match(js,/Discord-Tickets werden nicht automatisch übernommen/);
 });

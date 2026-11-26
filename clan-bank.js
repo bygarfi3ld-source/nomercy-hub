@@ -19,14 +19,56 @@ function initClanBank({db,json,readBody,errors,requireUser,checkRate,now}) {
   request_id INTEGER REFERENCES clan_bank_requests(id), note TEXT NOT NULL, created_at TEXT NOT NULL
  );
  CREATE INDEX IF NOT EXISTS idx_bank_requests_date ON clan_bank_requests(id DESC);
- CREATE INDEX IF NOT EXISTS idx_bank_ledger_date ON clan_bank_ledger(id DESC);`);
+ CREATE INDEX IF NOT EXISTS idx_bank_ledger_date ON clan_bank_ledger(id DESC);
+ CREATE TABLE IF NOT EXISTS clan_monthly_taxes (
+  month TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  handle_snapshot TEXT NOT NULL,
+  clan_snapshot TEXT NOT NULL CHECK(clan_snapshot IN ('main','clan2','clan3')),
+  paid INTEGER NOT NULL DEFAULT 0 CHECK(paid IN (0,1)),
+  paid_at TEXT,
+  updated_at TEXT,
+  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  PRIMARY KEY(month,user_id)
+ );
+ CREATE INDEX IF NOT EXISTS idx_monthly_tax_month ON clan_monthly_taxes(month,paid);`);
  db.prepare('INSERT OR IGNORE INTO clan_bank_account(id,balance_milli,updated_at) VALUES(1,0,?)').run(now());
  const bad=(message)=>{throw errors(400,message)};
  const trim=(v,max)=>typeof v==='string'?v.trim().slice(0,max+1):'';
  const atomic=(fn)=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}};
  const isOwner=(u)=>u.role==='admin';
+ const canManageTaxes=(u)=>['admin','coleader','moderator'].includes(u.role);
+ const taxManager=(req)=>{const u=requireUser(req);if(!canManageTaxes(u))throw errors(403,'Nur Mods und Clanleitung verwalten Monatssteuern.');return u;};
+ const currentMonth=()=>{
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit'}).formatToParts(new Date());
+  return parts.find(x=>x.type==='year').value+'-'+parts.find(x=>x.type==='month').value;
+ };
+ const taxMonth=(raw)=>{
+  const m=raw||currentMonth();
+  if(typeof m!=='string'|| !/^(20[2-9][0-9]|2100)-(0[1-9]|1[0-2])$/.test(m)||m>currentMonth())
+   bad('Ungültiger oder zukünftiger Steuer-Monat.');
+  return m;
+ };
+ const snapshotCurrentMonth=(month)=>{
+  if(month!==currentMonth())return;
+  // Month-end history retains people who have since left; newly approved members
+  // are included whenever the current month is viewed again.
+  db.prepare(`INSERT OR IGNORE INTO clan_monthly_taxes(month,user_id,handle_snapshot,clan_snapshot)
+   SELECT ?,cm.user_id,u.handle,cm.clan FROM clan_memberships cm
+   JOIN users u ON u.id=cm.user_id`).run(month);
+ };
+ const taxView=(month)=>{
+  snapshotCurrentMonth(month);
+  const rows=db.prepare(`SELECT t.month,t.user_id,t.handle_snapshot AS handle,t.clan_snapshot AS clan,
+    t.paid,t.paid_at,t.updated_at,editor.handle AS updated_by,
+    EXISTS(SELECT 1 FROM clan_memberships cm WHERE cm.user_id=t.user_id) AS still_member
+    FROM clan_monthly_taxes t LEFT JOIN users editor ON editor.id=t.updated_by
+    WHERE t.month=? ORDER BY CASE t.clan_snapshot WHEN 'main' THEN 0 WHEN 'clan2' THEN 1 ELSE 2 END,
+    LOWER(t.handle_snapshot) ASC LIMIT 1000`).all(month);
+  return {month,rows,paid:rows.filter(r=>r.paid===1).length,unpaid:rows.filter(r=>r.paid===0).length};
+ };
  const member=(u)=>!!db.prepare('SELECT 1 FROM clan_memberships WHERE user_id=?').get(u.id);
- const access=(req)=>{const u=requireUser(req);if(!isOwner(u)&&!member(u))throw errors(403,'Clanbank nur für von der Leitung freigeschaltete NoMercy-Mitglieder.');return u;};
+ const access=(req)=>{const u=requireUser(req);if(!isOwner(u)&&u.role!=='coleader'&&!member(u))throw errors(403,'Clanbank nur für von der Leitung freigeschaltete NoMercy-Mitglieder.');return u;};
  const admin=(req)=>{const u=requireUser(req);if(!isOwner(u))throw errors(403,'Nur die Clanleitung darf die Clanbank verwalten.');return u;};
  const amount=(raw,allowZero=false)=>{
   // JSON numbers are converted without floating point arithmetic by parsing their string representation.
@@ -52,6 +94,27 @@ function initClanBank({db,json,readBody,errors,requireUser,checkRate,now}) {
  };
  async function api(req,res,url) {
   const p=url.pathname,m=req.method;
+  if(p==='/api/hq/bank/taxes'){
+   const staff=taxManager(req);
+   if(m==='GET')return json(res,200,taxView(taxMonth(url.searchParams.get('month'))));
+   if(m!=='POST')throw errors(405,'Methode nicht erlaubt');
+   checkRate(req,'bank-monthly-tax',100,3600000);
+   const b=await readBody(req);
+   const month=taxMonth(b.month),id=Number(b.user_id);
+   if(!Number.isSafeInteger(id)||id<1||typeof b.paid!=='boolean')bad('Mitglied und bezahlt/offen auswählen.');
+   const result=atomic(()=>{
+    snapshotCurrentMonth(month);
+    const row=db.prepare('SELECT paid,handle_snapshot FROM clan_monthly_taxes WHERE month=? AND user_id=?').get(month,id);
+    if(!row)throw errors(404,'Mitglied für diesen Monat nicht in der Steuerliste.');
+    if(Boolean(row.paid)===b.paid)return {ok:true,unchanged:true};
+    const timestamp=now();
+    db.prepare(`UPDATE clan_monthly_taxes SET paid=?,paid_at=?,updated_at=?,updated_by=?
+     WHERE month=? AND user_id=?`).run(b.paid?1:0,b.paid?timestamp:null,timestamp,staff.id,month,id);
+    logAction(staff,b.paid?'clan_tax_paid':'clan_tax_unpaid',id,`${month}: ${row.handle_snapshot} → ${b.paid?'bezahlt':'offen'}`);
+    return {ok:true};
+   });
+   return json(res,200,{...result,...taxView(month)});
+  }
   if(p==='/api/hq/bank'){
    if(m!=='GET')throw errors(405,'Methode nicht erlaubt');
    const u=access(req);
