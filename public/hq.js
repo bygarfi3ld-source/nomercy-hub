@@ -87,7 +87,7 @@ function renderMarket(){const q=$('#marketSearch').value.trim().toLowerCase(),fi
  }).join(''):'<div class="empty"><strong>Keine Anzeigen gefunden.</strong>Noch ist es hier ruhig. Erstelle die erste echte Anzeige für die HugoSMP-Community.</div>';
 }
 async function loadPrivate(){const started=performance.now();setSkeleton('#giveawayList',2);if(eventMember())setSkeleton('#eventList',2);
- try{const ga=await api('/api/hq/giveaways');state.giveaways=ga.giveaways;$('#statGiveaways').textContent=ga.giveaways.length;
+ try{const ga=await api('/api/hq/giveaways');state.giveaways=ga.giveaways.filter(g=>g.status!=='cancelled');$('#statGiveaways').textContent=state.giveaways.length;
   if(eventMember()){const ev=await api('/api/hq/events');state.events=ev.events;$('#statEvents').textContent=ev.events.filter(e=>e.status==='open').length;}
   else{state.events=[];$('#statEvents').textContent='–';}
   await settleLoading(started,150);renderPrivate();finishSkeleton('#giveawayList');finishSkeleton('#eventList');}
@@ -461,7 +461,7 @@ async function handleClick(e){const tab=e.target.closest('[data-tab]');if(tab){a
   if(giveaway.dataset.giveaway==='spin')startSpin(g);
   if(giveaway.dataset.giveaway==='enter'){if(!state.user)return showAuth();await withAction(async()=>{await api(`/api/hq/giveaways/${id}/enter`,{});await loadPrivate();toast('Teilnahme aktualisiert.');});}
   if(giveaway.dataset.giveaway==='fulfill')await withAction(async()=>{const note=askNote('Erst nach echter Übergabe: Welche Gewinne wurden im Spiel ausgehändigt?');if(!note)return;await api(`/api/hq/giveaways/${id}/fulfill`,{note});await loadPrivate();toast('Übergabe dokumentiert.');});
-  if(giveaway.dataset.giveaway==='cancel')await withAction(async()=>{const note=askNote('Warum soll dieses Giveaway abgebrochen werden?');if(!note)return;await api(`/api/hq/giveaways/${id}/cancel`,{note});await loadPrivate();toast('Giveaway abgebrochen.');});return;
+  if(giveaway.dataset.giveaway==='cancel')await withAction(async()=>{const note=askNote('Warum soll dieses Giveaway abgebrochen werden?');if(!note)return;await api(`/api/hq/giveaways/${id}/cancel`,{note});state.giveaways=state.giveaways.filter(x=>x.id!==id);$('#statGiveaways').textContent=state.giveaways.length;renderPrivate();await loadPrivate();toast('Giveaway abgebrochen und aus der Liste entfernt.');});return;
  }
  const ev=e.target.closest('[data-event]');if(ev){const id=Number(ev.dataset.id);
   if(ev.dataset.event==='join')await withAction(async()=>{await api(`/api/hq/events/${id}/join`,{});await loadPrivate();toast('Event-Teilnahme aktualisiert.');});

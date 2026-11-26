@@ -251,3 +251,47 @@ test('Admin member cards expose a confirmed remove button for all clan ranks',()
  assert.match(js,/wirklich aus NoMercy entfernen/);
  assert.match(js,/loadTeam\(\),loadRoster\(\)/);
 });
+
+test('Abgebrochenes Giveaway verschwindet sofort und dauerhaft aus Listen, aber nicht aus dem Audit', {timeout:30000}, async()=>{
+ const dir=mkdtempSync(path.join(tmpdir(),'nomercy-cancel-'));let srv;
+ try{
+  srv=await boot(dir);const url=srv.url;
+  const admin=await register(url,'CancelAdmin'),member=await register(url,'CancelMember'),visitor=await register(url,'CancelVisitor');
+  assert.equal((await response(url,'/api/admin/claim',{token:secret},admin)).status,200);
+  assert.equal((await response(url,'/api/hq/clan/members',{handle:'CancelMember',clan:'clan3'},admin)).status,200);
+  const base={title:'Abbruchtest',description:'Probelauf mit einem Test-Gewinn',prize_kind:'item',prize_detail:'Diamond',prize_amount:1,
+   winner_count:1,ends_at:new Date(Date.now()+36000000).toISOString()};
+  const publicG=await response(url,'/api/hq/giveaways',{...base,visibility:'public'},admin);
+  const privateG=await response(url,'/api/hq/giveaways',{...base,visibility:'clan'},admin);
+  assert.equal(publicG.status,201);assert.equal(privateG.status,201);
+  const p=publicG.data.id,c=privateG.data.id;
+  assert.equal((await response(url,`/api/hq/giveaways/${p}/enter`,{},visitor)).status,200);
+  assert.equal((await response(url,`/api/hq/giveaways/${c}/enter`,{},member)).status,200);
+  assert.deepEqual((await response(url,'/api/hq/giveaways',undefined,member)).data.giveaways.map(x=>x.id),[c,p]);
+  assert.equal((await response(url,`/api/hq/giveaways/${p}/cancel`,{note:'Test'},member)).status,403);
+  assert.equal((await response(url,`/api/hq/giveaways/${p}/cancel`,{note:''},admin)).status,400);
+  assert.equal((await response(url,`/api/hq/giveaways/${p}/cancel`,{note:'Test'},admin)).status,200);
+  assert.equal((await response(url,`/api/hq/giveaways/${c}/cancel`,{note:'Test'},admin)).status,200);
+  assert.deepEqual((await response(url,'/api/hq/giveaways',undefined,member)).data.giveaways,[],'Clan member does not see cancelled giveaways');
+  assert.deepEqual((await response(url,'/api/hq/giveaways',undefined,admin)).data.giveaways,[],'Admin feed hides cancelled giveaways');
+  assert.deepEqual((await response(url,'/api/hq/giveaways')).data.giveaways,[],'Public feed hides cancelled giveaways');
+  for(const id of [p,c]){
+   assert.equal((await response(url,`/api/hq/giveaways/${id}`,undefined,admin)).status,404,'Cancelled direct link hidden');
+   assert.equal((await response(url,`/api/hq/giveaways/${id}/enter`,{},member)).status,409,'Cannot enter cancelled draw');
+   assert.equal((await response(url,`/api/hq/giveaways/${id}/cancel`,{note:'No second cancellation'},admin)).status,409);
+  }
+  const audit=(await response(url,'/api/hq/mod/audit',undefined,admin)).data.history;
+  assert.equal(audit.filter(x=>x.action==='giveaway_cancel').length,2,'Cancellations still logged');
+  const db=new DatabaseSync(path.join(dir,'hub.sqlite'));
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM clan_giveaways WHERE status='cancelled'").get().n,2,'Records remain for audit/history');
+  db.close();
+  await stop(srv);srv=await boot(dir);
+  assert.deepEqual((await response(srv.url,'/api/hq/giveaways',undefined,member)).data.giveaways,[],'Cancelled draws stay hidden after restart');
+ } finally {if(srv)await stop(srv);rmSync(dir,{force:true,recursive:true});}
+});
+test('Giveaway UI hides cancelled draws immediately after an acknowledged cancellation',()=>{
+ const js=require('node:fs').readFileSync(path.join(__dirname,'../public/hq.js'),'utf8');
+ assert.match(js,/state\.giveaways=ga\.giveaways\.filter\(g=>g\.status!=='cancelled'\)/);
+ assert.match(js,/state\.giveaways=state\.giveaways\.filter\(x=>x\.id!==id\)/);
+ assert.match(js,/Giveaway abgebrochen und aus der Liste entfernt/);
+});
