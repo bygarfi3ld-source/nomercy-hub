@@ -255,8 +255,8 @@ function renderMissions(){
 function showMissionForm(){
  if(!staff())return toast('Nur Clanleitung und Mods können Aufträge erstellen.');
  modal('Neuen Clan-Auftrag erstellen',`<form class="form" id="missionCreateForm">
-  <label>Auftragstitel<input name="title"" maxlength="100" required placeholder="z. B. 3 Stacks Obsidian sammeln"></label>
-  <label>Beschreibung / Ziel<textarea name="description"" maxlength="1200" required placeholder="Was soll erledigt werden? Wie gebt ihr die Materialien ab?"></textarea></label>
+  <label>Auftragstitel<input name="title" maxlength="100" required placeholder="z. B. 3 Stacks Obsidian sammeln"></label>
+  <label>Beschreibung / Ziel<textarea name="description" maxlength="1200" required placeholder="Was soll erledigt werden? Wie gebt ihr die Materialien ab?"></textarea></label>
   <label>Für welchen Clan?<select name="clan_scope"><option value="all">Alle drei Clans</option><option value="main">👑 Mainclan</option><option value="clan2">⚔ 2. Clan</option><option value="clan3">🛡 3. Clan</option></select></label>
   <label>Wie viele Mitglieder können mitmachen?<input name="slots" type="number" inputmode="numeric" min="1" max="30" step="1" value="5" required></label>
   <label>Frist (optional)<input name="due_at" type="datetime-local"></label>
@@ -273,7 +273,7 @@ function showMissionSubmitForm(id){
  if(!m||m.my_status!=='joined')return;
  modal('Erledigung einreichen',`<form class="form" id="missionSubmitForm">
   <p><b>${esc(m.title)}</b></p>
-  <label>Was hast du erledigt?<textarea name="note"" maxlength="400" required placeholder="z. B. 3 Stacks Obsidian an die Clanleitung übergeben."></textarea></label>
+  <label>Was hast du erledigt?<textarea name="note" maxlength="400" required placeholder="z. B. 3 Stacks Obsidian an die Clanleitung übergeben."></textarea></label>
   <div class="banner">Der Auftrag gilt erst nach Prüfung durch das Clan-Team als abgeschlossen.</div>
   <button class="btn primary full">Zur Prüfung senden</button></form>`,'CLAN / ERLEDIGT');
  $('#missionSubmitForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{
