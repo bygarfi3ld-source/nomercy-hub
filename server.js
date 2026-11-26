@@ -5,6 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const net = require('node:net');
 const {backupDb,settings:backupSettings} = require('./backup');
+const {legalPage}=require('./legal-pages');
 const { DatabaseSync } = require('node:sqlite');
 const { initClanHQ } = require('./clan-hq');
 const { initClanBank } = require('./clan-bank');
@@ -449,6 +450,16 @@ function staticFile(req,res,url){
  if(req.method!=='GET')return json(res,405,{error:'Methode nicht erlaubt'});
  let p;try{p=decodeURIComponent(url.pathname);}catch{return json(res,400,{error:'Ungültige URL'});}
  if(p==='/')p='/index.html';
+ // Legal pages stay unavailable until the data and the reviewed texts are complete.
+ // Contact details live only in Railway variables, never Git history.
+ if(p==='/impressum.html'||p==='/datenschutz.html'){
+  const rendered=legalPage(p);
+  if(!rendered)return json(res,503,{error:'Rechtliche Angaben werden vorbereitet.'});
+  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store',
+   'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY',
+   'Content-Security-Policy':"default-src 'self'; style-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"});
+  return res.end(rendered);
+ }
  const full=path.resolve(ROOT,'public','.'+p); const base=path.resolve(ROOT,'public');
  if(!full.startsWith(base+path.sep))return json(res,403,{error:'Nicht erlaubt'});
  fs.readFile(full,(err,data)=>{if(err)return json(res,404,{error:'Datei nicht gefunden'});
