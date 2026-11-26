@@ -5,6 +5,7 @@ WORKDIR /app
 COPY server.js ./server.js
 COPY clan-hq.js ./clan-hq.js
 COPY clan-bank.js ./clan-bank.js
+COPY backup.js ./backup.js
 COPY public ./public
 # /data is mounted as a persistent volume in production (see README)
 EXPOSE 3030
