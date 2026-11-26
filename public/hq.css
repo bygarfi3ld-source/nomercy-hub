@@ -631,3 +631,31 @@ body[data-section]:not([data-section='market']) .memberbar{margin-bottom:21px}
 #teamRolesPanel .muted{font-size:13px;line-height:1.6}
 @media(max-width:1000px){.nav{justify-content:flex-start;max-width:100%}.nav button{flex:0 0 auto;white-space:nowrap}}
 @media(max-width:680px){.topinner{padding-bottom:8px}.nav{justify-content:flex-start;scroll-snap-type:x proximity;scroll-padding-inline:10px}.nav button{flex:0 0 auto;scroll-snap-align:start;min-height:43px}.section-marker{position:relative;gap:10px}.roster-list{grid-template-columns:1fr}.roster-summary{gap:6px}.roster-summary>span{padding:9px 11px;flex-grow:1;justify-content:center}.roster-summary strong{font-size:19px}.roster-toolbar{flex-direction:column;align-items:stretch}.roster-toolbar label{min-width:0;width:100%}.roster-toolbar .btn{width:100%}.roster-rank{font-size:10px}.roster-person{padding:12px}}
+
+
+/* V1.7 – accessible existing-member entry, calm content changes and consistent loading */
+.existing-access-top{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:39px;padding:9px 13px;border:1px solid #e9788466;border-radius:11px;background:#472530;color:#fff4f5;font-weight:800;font-size:12px;line-height:1.2;white-space:nowrap;transition:background .12s}
+.existing-access-top:hover{background:#713442}
+.existing-access-top:focus-visible{outline:2px solid #ff8e9b;outline-offset:3px}
+.existing-access-top[hidden]{display:none!important}
+.head-actions{gap:9px}
+.skeleton-row{min-width:0;display:flex;align-items:center;gap:14px;padding:15px 16px;min-height:74px;border-radius:14px;background:#fff;border:1px solid #eee9e8;overflow:hidden}
+.skeleton-avatar{flex:0 0 42px;height:42px;background:#efeded;border-radius:12px;position:relative;overflow:hidden}
+.skeleton-row .skeleton-line{flex:1;max-width:45%;height:13px;width:auto}
+.skeleton-row .skeleton-line.short{flex:0 1 24%;height:11px;max-width:24%}
+.skeleton-avatar:before{content:'';position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(95deg,transparent 0,#fdfbfb 50%,transparent 100%);animation:hq-skeleton-shimmer 1.9s linear infinite}
+#teamRoleList[aria-busy='true'],#marketReports[aria-busy='true']{display:grid;gap:10px}
+#rosterList[aria-busy='true']{min-height:180px}
+#memberList[aria-busy='true'],#clanApplications[aria-busy='true'],#clanApplicationsHistory[aria-busy='true']{min-height:200px}
+.skeleton-line:before,.skeleton-block:before{animation-duration:1.9s;animation-timing-function:linear}
+.card-grid[aria-busy='true'] .skeleton-card{animation:none!important}
+.card-grid:not([aria-busy='true'])>.tile,.tab-panel .sectionhead,.tab-panel.panel-enter{animation:none!important}
+.btn:hover:not(:disabled){transform:none!important}
+.nav button:active,.btn:active{transform:none!important}
+@media(max-width:680px){
+ .head-actions{gap:6px;flex-wrap:wrap;justify-content:flex-end}
+ .existing-access-top{min-height:38px;padding:7px 10px;font-size:10px;max-width:145px;white-space:normal;text-align:center}
+ .skeleton-row{padding:12px;gap:10px}
+ .skeleton-row .skeleton-line.short{max-width:25%}
+}
+@media(prefers-reduced-motion:reduce){.skeleton-avatar:before,.skeleton-line:before,.skeleton-block:before{animation:none!important}}
