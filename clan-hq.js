@@ -175,8 +175,8 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    const requestType=b.request_type===undefined?'application':b.request_type;
    if(!['application','existing'].includes(requestType))fail('Unbekannte Antragsart.');
    const allowed=requestType==='existing'?['main','clan2','clan3']:['clan2','clan3'];
-   if(!/^[A-Za-z0-9_]{3,16}$/.test(mc)||!allowed.includes(desired)||message.length<20)
-    fail('Minecraft-Name, Wunschclan und Erklärung mit mindestens 20 Zeichen angeben.');
+   if(!/^[A-Za-z0-9_]{3,16}$/.test(mc)||!allowed.includes(desired)||!message)
+    fail('Minecraft-Name, Wunschclan und eine kurze Erklärung angeben.');
    const previous=db.prepare('SELECT id,status,updated_at FROM clan_join_requests WHERE user_id=?').get(u.id);
    if(previous?.status==='pending')throw errors(409,'Deine Anfrage wird bereits geprüft.');
    if(previous?.status==='approved')throw errors(409,'Bereits genehmigt. Wende dich bei Fragen an die Clanleitung.');
@@ -195,8 +195,8 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   if(applicationReview){
    postOnly(m);const admin=requireStaff(req,true);checkRate(req,'hq-clan-review',35,3600000);
    const id=safeId(applicationReview[1]),b=await readBody(req),decision=b.decision,clan=b.clan,note=clean(b.note,400);
-   if(!['approve','reject'].includes(decision)||note.length<8||(decision==='approve'&&!['main','clan2','clan3'].includes(clan)))
-    fail('Entscheidung, Clan und Begründung (mindestens 8 Zeichen) angeben.');
+   if(!['approve','reject'].includes(decision)||!note||(decision==='approve'&&!['main','clan2','clan3'].includes(clan)))
+    fail('Entscheidung, Clan und eine Begründung angeben.');
    runAtomic(()=>{
     const application=db.prepare('SELECT * FROM clan_join_requests WHERE id=?').get(id);
     if(!application||application.status!=='pending')throw errors(409,'Diese Anfrage ist nicht mehr offen.');
@@ -258,7 +258,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    postOnly(m);if(!canManageEvents(u))throw errors(403,'Nur das Event-Team und die Clanleitung können Events erstellen.');checkRate(req,'hq-event-create',10,3600000);
    const b=await readBody(req),title=clean(b.title,80),description=clean(b.description,700),category=b.category,
     max=Number(b.max_players),start=future(b.starts_at,60000,30*86400000),duration=Number(b.duration_minutes);
-   if(title.length<5||description.length<10||!['FFA','Baseraid','Turnier','Training','Community'].includes(category)||
+   if(!title||!description||!['FFA','Baseraid','Turnier','Training','Community'].includes(category)||
     !Number.isSafeInteger(max)||max<2||max>100||!Number.isSafeInteger(duration)||duration<15||duration>480)fail('Eventdaten ungültig.');
    const id=Number(db.prepare(`INSERT INTO clan_events(creator_id,title,category,description,starts_at,ends_at,max_players,created_at)
     VALUES(?,?,?,?,?,?,?,?)`).run(u.id,title,category,description,start,new Date(Date.parse(start)+duration*60000).toISOString(),max,now()).lastInsertRowid);
@@ -281,7 +281,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    const staff=requireUser(req);if(!canManageEvents(staff))throw errors(403,'Keine Event-Verwaltungsrechte.');
    const b=await readBody(req);
    if(!['closed','hidden','open'].includes(b.status))fail('Ungültiger Status.');
-   const note=clean(b.note,400);if(note.length<8)fail('Begründung mit mindestens 8 Zeichen angeben.');
+   const note=clean(b.note,400);if(!note)fail('Bitte eine Begründung angeben.');
    const e=db.prepare('SELECT status,creator_id FROM clan_events WHERE id=?').get(id);
    if(!e)throw errors(404,'Event nicht gefunden');
    if(staff.role==='event_manager'&&(e.creator_id!==staff.id||b.status!=='closed'))throw errors(403,'Event-Team darf nur eigene Events schließen.');
@@ -298,7 +298,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    postOnly(m);const staff=requireStaff(req);checkRate(req,'hq-giveaway-create',6,3600000);
    const b=await readBody(req),title=clean(b.title,80),description=clean(b.description,700),kind=b.prize_kind,
     prize=clean(b.prize_detail,100),amount=Number(b.prize_amount),count=Number(b.winner_count),end=future(b.ends_at,60000,30*86400000),visibility=b.visibility||'clan';
-   if(title.length<5||description.length<10||!['money','item'].includes(kind)||prize.length<2||
+   if(!title||!description||!['money','item'].includes(kind)||!prize||
      !Number.isSafeInteger(amount)||amount<1||amount>1000000000||!Number.isSafeInteger(count)||count<1||count>20||!['public','clan'].includes(visibility))fail('Giveaway-Angaben ungültig.');
    const id=Number(db.prepare(`INSERT INTO clan_giveaways(creator_id,title,description,prize_kind,prize_detail,prize_amount,winner_count,ends_at,created_at,visibility)
      VALUES(?,?,?,?,?,?,?,?,?,?)`).run(staff.id,title,description,kind,prize,amount,count,end,now(),visibility).lastInsertRowid);
@@ -328,7 +328,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
     });return json(res,200,{entered});
    }
    const staff=requireStaff(req);const b=await readBody(req);const note=clean(b.note,400);
-   if(note.length<8)fail('Grund mit mindestens 8 Zeichen erforderlich.');
+   if(!note)fail('Bitte einen Grund angeben.');
    if(gm[2]==='fulfill'){
     runAtomic(()=>{
      const g=db.prepare('SELECT status,fulfilled_at FROM clan_giveaways WHERE id=?').get(id);
@@ -353,7 +353,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    postOnly(m);const u=requireUser(req);checkRate(req,'hq-market-create',8,3600000);
    const b=await readBody(req),kind=b.kind,title=clean(b.title,80),description=clean(b.description,1000),
     mc=clean(b.mc_contact,16),price=Number(b.price_millions);
-   if(!['offer','search','service'].includes(kind)||title.length<5||description.length<10||
+   if(!['offer','search','service'].includes(kind)||!title||!description||
       !/^[A-Za-z0-9_]{3,16}$/.test(mc)||!Number.isSafeInteger(price)||price<0||price>1000000000)fail('Inserat unvollständig oder ungültig.');
    const id=Number(db.prepare(`INSERT INTO market_listings(creator_id,kind,title,description,price_millions,mc_contact,created_at,updated_at)
      VALUES(?,?,?,?,?,?,?,?)`).run(u.id,kind,title,description,price,mc,now(),now()).lastInsertRowid);
@@ -370,14 +370,14 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
    }
    if(act==='moderate'){
     const staff=requireStaff(req);const b=await readBody(req),status=b.status,note=clean(b.note,400);
-    if(!['hidden','open','closed'].includes(status)||note.length<8)fail('Status und Begründung erforderlich.');
+    if(!['hidden','open','closed'].includes(status)||!note)fail('Status und Begründung erforderlich.');
     const row=db.prepare('SELECT status FROM market_listings WHERE id=?').get(id);if(!row)throw errors(404,'Inserat nicht gefunden');
     runAtomic(()=>{db.prepare('UPDATE market_listings SET status=?,updated_at=? WHERE id=?').run(status,now(),id);audit(staff,'market_status',id,`${row.status} -> ${status}: ${note}`)});
     return json(res,200,{ok:true});
    }
    checkRate(req,'hq-market-report',10,3600000);
    const b=await readBody(req),reason=clean(b.reason,500);
-   if(reason.length<15)fail('Bitte den Verdacht mit mindestens 15 Zeichen erklären.');
+   if(!reason)fail('Bitte den Verdacht kurz erklären.');
    if(!db.prepare("SELECT 1 FROM market_listings WHERE id=? AND status='open'").get(id))throw errors(404,'Inserat nicht gefunden.');
    try{db.prepare('INSERT INTO market_reports(listing_id,reporter_id,reason,created_at) VALUES(?,?,?,?)').run(id,u.id,reason,now());}
    catch(e){if(String(e.message).includes('UNIQUE'))throw errors(409,'Dieses Inserat hast du schon gemeldet.');throw e;}
@@ -393,7 +393,7 @@ function initClanHQ({db,json,readBody,errors,requireUser,requireStaff,checkRate,
   if(p==='/api/hq/mod/market/review'){
    postOnly(m);const staff=requireStaff(req);checkRate(req,'hq-market-review',30,3600000);
    const b=await readBody(req),id=safeId(b.id),status=b.status,note=clean(b.note,400);
-   if(!['reviewed','dismissed'].includes(status)||note.length<8)fail('Status und Notiz erforderlich.');
+   if(!['reviewed','dismissed'].includes(status)||!note)fail('Status und Notiz erforderlich.');
    const r=db.prepare('SELECT status FROM market_reports WHERE id=?').get(id);if(!r)throw errors(404,'Meldung nicht gefunden');
    runAtomic(()=>{db.prepare('UPDATE market_reports SET status=?,reviewed_by=?,review_note=? WHERE id=?').run(status,staff.id,note,id);audit(staff,'market_report_review',id,`${r.status} -> ${status}: ${note}`)});
    return json(res,200,{ok:true});
