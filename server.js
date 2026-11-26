@@ -147,7 +147,7 @@ function currentUser(req) {
 function requireUser(req) { const u=currentUser(req); if(!u)throw errors(401,'Bitte zuerst ein Hub-Konto erstellen oder anmelden.'); return u; }
 function requireStaff(req, adminOnly=false) {
  const u=currentUser(req);
- if(!u || (adminOnly?u.role!=='admin':!['admin','moderator'].includes(u.role))) {
+ if(!u || (adminOnly?u.role!=='admin':!['admin','coleader','moderator'].includes(u.role))) {
   throw errors(403,'Keine Moderationsberechtigung.');
  }
  return u;
@@ -393,16 +393,17 @@ async function api(req,res,url) {
  }
  if(p==='/api/admin/team' && method==='GET') {
   requireStaff(req,true);
-  return json(res,200,{team:db.prepare("SELECT id,handle,role FROM users WHERE role IN ('admin','moderator','event_manager') ORDER BY role,handle").all()});
+  return json(res,200,{team:db.prepare("SELECT id,handle,role FROM users WHERE role IN ('admin','coleader','moderator','event_manager') ORDER BY role,handle").all()});
  }
  if(p==='/api/admin/team' && method==='POST') {
   const staff=requireStaff(req,true);checkRate(req,'moderation-team',15,3600000);
   const b=await readBody(req),handle=bounded(b.handle,20),role=b.role;
-  if(!/^[A-Za-z0-9_]{3,20}$/.test(handle)||!['moderator','event_manager','member'].includes(role))throw errors(400,'Hub-Name und Rolle moderator/event_manager/member erforderlich.');
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(handle)||!['coleader','moderator','event_manager','member'].includes(role))throw errors(400,'Hub-Name und Rolle coleader/moderator/event_manager/member erforderlich.');
   const result=atomic(()=>{
    const target=db.prepare('SELECT id,role FROM users WHERE handle=?').get(handle);
    if(!target)throw errors(404,'Hub-Konto nicht gefunden');
    if(target.role==='admin')throw errors(403,'Administratoren lassen sich über diese Oberfläche nicht verändern.');
+   if(role==='coleader'&&!db.prepare('SELECT 1 FROM clan_memberships WHERE user_id=?').get(target.id))throw errors(409,'Co-Leader benötigen zuerst eine bestätigte Clan-Mitgliedschaft.');
    if(target.role===role)throw errors(409,'Die Rolle ist schon vergeben.');
    db.prepare('UPDATE users SET role=? WHERE id=?').run(role,target.id);
    audit(staff,'team_role',null,null,target.role,role,'Hub-Konto '+handle);
