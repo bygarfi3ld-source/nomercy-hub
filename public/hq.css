@@ -767,3 +767,6 @@ body{font-family:var(--font-body)}
 .footer .footer-legal a{margin:0;color:#b1b3be;font-size:12px;font-weight:500;min-height:40px;text-decoration:underline;text-decoration-color:#5f626d;text-underline-offset:4px}
 .footer .footer-legal a:hover,.footer .footer-legal a:focus-visible{color:#fff;text-decoration-color:#e2e3e7}
 @media(max-width:480px){.footer .footer-legal.wrap{gap:14px;padding:11px 16px 21px}}
+
+/* Discord account verification */
+.discord-connection{display:grid;gap:12px;padding:18px;margin:16px 0;border:1px solid var(--line,#30363c);border-radius:14px;overflow-wrap:anywhere}.discord-connection p,.discord-identity p{margin:4px 0}.discord-identity{padding:12px;border-left:3px solid #79d6b1;background:#79d6b110;overflow-wrap:anywhere}.discord-identity strong{color:#94e4c4}.discord-identity small{display:block;font-size:.78rem}.discord-connection .btn{width:fit-content;max-width:100%;white-space:normal}

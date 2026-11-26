@@ -46,9 +46,18 @@ test('Owner/Mod permissions: no account, member, Co-Leader, event-team or legacy
    db.prepare('INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(?,?,?)').run(crypto.createHash('sha256').update(token).digest('hex'),id,Date.now()+3600000);
    if(clan)db.prepare('INSERT INTO clan_memberships(user_id,clan,approved_by,approved_at) VALUES(?,?,1,?)').run(id,clan,new Date().toISOString());
    sessions[name]='sid='+token;
+   if(name==='Account')db.prepare('INSERT INTO discord_links(user_id,discord_id,username,display_name,linked_at) VALUES(?,?,?,?,?)')
+    .run(id,'987654321098765432','matrix_account','Verified Matrix',new Date().toISOString());
   }
   db.close();
   const {Mod:mod,Account:account,Member:member,CoLead:colead,Event:eventTeam}=sessions;
+  assert.equal((await call(url,'/api/discord/status')).status,401);
+  assert.equal((await call(url,'/api/discord/status',undefined,account)).data.identity.id,'987654321098765432');
+  assert.equal((await call(url,'/api/hq/me',undefined,account)).data.user.discord.username,'matrix_account');
+  assert.equal((await call(url,'/api/hq/me',undefined,member)).data.user.discord,null);
+  assert.equal(Object.hasOwn((await call(url,'/api/players/MatrixAccount')).data.profile,'discord'),false,'Public profiles do not expose Discord');
+  const crossSite=await fetch(url+'/api/discord/disconnect',{method:'POST',headers:{Cookie:account,Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'});
+  assert.equal(crossSite.status,403,'Cross-site unlink is rejected');
   const end=new Date(Date.now()+3600000).toISOString();
   const giveaway={title:'Permission giveaway',description:'Free in-game test drop',prize_kind:'item',prize_detail:'Diamond',prize_amount:1,winner_count:1,ends_at:end,visibility:'public'};
   const event={title:'Permission event',description:'Staff event only',category:'FFA',starts_at:end,duration_minutes:15,max_players:10};
@@ -71,6 +80,7 @@ test('Owner/Mod permissions: no account, member, Co-Leader, event-team or legacy
   for(const cookie of [owner,mod]){
    const all=await call(url,'/api/hq/clan/requests',undefined,cookie);
    assert.equal(all.status,200);assert.equal(all.data.requests[0].message,application.message);
+   assert.equal(all.data.requests[0].discord.id,'987654321098765432','Only staff receive verified identity with applications');
    assert.equal((await call(url,'/api/hq/giveaways',giveaway,cookie)).status,201);
    assert.equal((await call(url,'/api/hq/events',event,cookie)).status,201);
    assert.equal((await call(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'10',note:'Staff deposit'},cookie)).status,201);
@@ -111,6 +121,9 @@ test('Owner/Mod permissions: no account, member, Co-Leader, event-team or legacy
   assert.deepEqual((await call(url,'/api/hq/market')).data.listings,[],'Ad removal survives restart');
   assert.ok(!(await call(url,'/api/hq/events',undefined,member)).data.events.some(e=>e.id===eventId),'Event removal survives restart');
   assert.equal((await call(url,'/api/hq/bank',undefined,owner)).data.balance_milli,19000,'Bank ledger survives restart');
+  assert.equal((await call(url,'/api/discord/status',undefined,account)).data.identity.id,'987654321098765432','Discord links survive restart');
+  assert.equal(Object.hasOwn((await call(url,'/api/hq/clan/roster')).data,'discord'),false);
+  assert.equal(JSON.stringify((await call(url,'/api/hq/clan/roster')).data).includes('987654321098765432'),false,'Public roster never contains Discord IDs');
   const audit=(await call(url,'/api/hq/mod/audit',undefined,owner)).data.history;
   assert.equal(audit.filter(x=>x.action==='market_removed').length,3,'Ad removal is audited');
   assert.equal((await call(url,'/api/hq/bank/transactions',{kind:'deposit',amount:'1',note:'Still denied'},mod)).status,403);

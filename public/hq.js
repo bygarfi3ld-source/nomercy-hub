@@ -44,6 +44,27 @@ function syncHeader(){const u=state.user;$('#accountBtn').textContent=u?`${u.han
  `${u.handle} · Öffentliche Giveaways sind für dich offen. Für Clan-Events und private Giveaways muss die Leitung dich freischalten.`;
  }
 async function refreshUser(){state.user=(await api('/api/hq/me')).user;syncHeader();}
+function verifiedDiscordHTML(identity){return identity?`<div class="discord-identity"><strong>✓ Discord-Konto bestätigt</strong><p>${esc(identity.display_name)} · @${esc(identity.username)}</p><small>Discord-ID: ${esc(identity.id)} · Verbunden: ${date(identity.linked_at)}</small></div>`:'<p class="muted">Kein bestätigtes Discord-Konto verbunden. Ein eingetragener Name ist kein Identitätsnachweis.</p>';}
+async function connectDiscord(){const result=await api('/api/discord/start',{});const target=new URL(result.url);if(target.origin!=='https://discord.com'||target.pathname!=='/oauth2/authorize')throw Error('Ungültiges Discord-Ziel');window.location.assign(target.href);}
+async function renderDiscordConnection(selector,prefix){
+ const panel=$(selector);if(!panel)return;
+ const result=await api('/api/discord/status');
+ if(!state.user)return;
+ panel.innerHTML=`${verifiedDiscordHTML(result.identity)}<p class="desc">Über Discord verbinden wir deine feste Discord-ID mit deinem Hub-Konto. Die Clanleitung kann sie mit deinem bekannten Discord-Konto abgleichen. Dein Minecraft-Name und Clanrang werden weiterhin manuell geprüft. <a href="/datenschutz.html" target="_blank" rel="noopener noreferrer">Datenschutz</a></p>${result.identity?`<button type="button" class="btn outline" id="${prefix}Disconnect">Verbindung entfernen</button>`:result.available?`<button type="button" class="btn primary" id="${prefix}Connect">Discord verbinden ↗</button><small>Du bestätigst direkt bei Discord. Der Hub erhält ID und Namen, keine E-Mail, Nachrichten oder Passwörter.</small>`:'<p class="muted">Die Discord-Verbindung wird noch eingerichtet. Bitte lass deine Identität vorerst direkt durch die Clanleitung prüfen.</p>'}`;
+ $('#'+prefix+'Connect')?.addEventListener('click',()=>withAction(connectDiscord));
+ $('#'+prefix+'Disconnect')?.addEventListener('click',()=>withAction(async()=>{
+  if(!confirm('Discord-Verbindung entfernen? Die Clanleitung sieht dieses Konto dann als nicht verbunden.'))return;
+  await api('/api/discord/disconnect',{});await refreshUser();await renderDiscordConnection(selector,prefix);toast('Discord-Verbindung entfernt.');
+ }));
+}
+async function showAccount(){
+ if(state.user)await syncApprovedAccess();
+ if(!state.user)return showAuth();
+ modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||(state.user.role==='event_manager'?'Event-Team':'Noch keine Clan-Freischaltung'))}</p><div class="discord-connection" id="accountDiscord"><p>Discord-Verbindung wird geladen …</p></div><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
+ if(!member()){$('#logoutBtn').insertAdjacentHTML('beforebegin','<button class="btn primary" id="applyFromAccount">Bestehenden Clan-Zugang bestätigen lassen</button>');$('#applyFromAccount').onclick=()=>{closeModal();void showClanApplication('existing');};}
+ $('#logoutBtn').onclick=()=>withAction(async()=>{await api('/api/logout',{});closeModal();await refreshUser();await loadPrivate();await loadMarket();await setTab('market');toast('Abgemeldet.');});
+ try{await renderDiscordConnection('#accountDiscord','accountDiscord');}catch(err){$('#accountDiscord').textContent=err.message;}
+}
 // An admin can approve a member while their browser is open. Keep access state fresh
 // when returning to the tab or navigating; no page reload or logout is necessary.
 let accessRefreshInFlight=null;
@@ -119,7 +140,9 @@ async function loadCommunityLinks(){
 async function loadApplication(){
  const form=$('#applyForm'),accessForm=$('#accessForm'),gate=$('#applyGate'),status=$('#applyStatus'),switcher=$('#applyModeSwitcher');
  form.hidden=true;accessForm.hidden=true;switcher.hidden=true;gate.hidden=!!state.user;status.hidden=true;
+ const discordPanel=$('#applicationDiscord');if(discordPanel)discordPanel.hidden=!state.user;
  if(!state.user)return;
+ try{await renderDiscordConnection('#applicationDiscord','applicationDiscord');}catch(err){if(discordPanel)discordPanel.textContent=err.message;}
  const started=performance.now();status.hidden=false;
  status.innerHTML='<div class="apply-loading" aria-label="Antragsstatus lädt"><span class="skeleton-line lg"></span><span class="skeleton-line md"></span><span class="skeleton-line short"></span></div>';
  try{
@@ -318,7 +341,7 @@ async function loadTeam(){if(!staff())return;
   $('#clanApplications').innerHTML=pending.length?pending.map(r=>`<article class="tile clan-application">
    <div class="tile-top"><span class="pill red">${r.request_type==='existing'?'● ZUGANGSPRÜFUNG':'● NEUBEWERBUNG'}</span><span class="meta">#${r.id}</span></div>
    <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan]||r.desired_clan)}</p>
-   <p class="desc">${esc(r.message)}</p><div class="meta">Eingereicht: ${date(r.created_at)}</div>
+   ${verifiedDiscordHTML(r.discord)}<p class="desc">${esc(r.message)}</p><div class="meta">Eingereicht: ${date(r.created_at)}</div>
    <label>Clanleitung entscheidet: <select id="join-clan-${r.id}">${r.request_type==='existing'?`<option value="main" ${r.desired_clan==='main'?'selected':''}>👑 Bestehenden Mainrang bestätigen</option>`:''}<option value="clan3" ${r.desired_clan==='clan3'?'selected':''}>Clan 3</option><option value="clan2" ${r.desired_clan==='clan2'?'selected':''}>Clan 2</option></select></label>
     ${r.request_type==='existing'?'<p class="desc">⚠ Identität und echten Clanrang außerhalb des Hubs prüfen. Main nur nach ausdrücklicher Bestätigung.</p>':''}
    <label>Begründung <textarea id="join-note-${r.id}" maxlength="400" placeholder="Prüfung, Entscheidung und Trustfactor …"></textarea></label>
@@ -328,7 +351,7 @@ async function loadTeam(){if(!staff())return;
   $('#clanApplicationsHistory').innerHTML=history.length?history.map(r=>`<article class="tile clan-application is-reviewed">
    <div class="tile-top"><span class="pill ${r.status==='approved'?'approved':'rejected'}">${esc(reviewedLabel[r.status]||r.status)} · ${r.request_type==='existing'?'ZUGANG':'BEWERBUNG'}</span><span class="meta">#${r.id}</span></div>
    <h3>${esc(r.handle)}</h3><p class="desc">Minecraft: <b>${esc(r.mc_name)}</b> (unverifiziert) · Wunsch: ${esc(labelClan[r.desired_clan]||r.desired_clan)}</p>
-   <p class="desc">${esc(r.message)}</p>
+   ${verifiedDiscordHTML(r.discord)}<p class="desc">${esc(r.message)}</p>
    <div class="meta">Eingereicht: ${date(r.created_at)} · Bearbeitet: ${date(r.updated_at)}${r.reviewed_by_handle?' · von '+esc(r.reviewed_by_handle):''}</div>
    ${r.review_note?`<p class="desc">Entscheidung: ${esc(r.review_note)}</p>`:''}
    </article>`).join(''):'<div class="empty">Noch keine bearbeiteten Clan-Bewerbungen.</div>';
@@ -679,11 +702,7 @@ async function init(){
  window.addEventListener('focus',()=>{if(state.user)void withAction(syncApprovedAccess);});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user)void withAction(syncApprovedAccess);});
  setSkeleton('#marketList',3);setSkeleton('#giveawayList',2);setSkeleton('#eventList',2);document.addEventListener('click',handleClick);$('#existingAccessBtn').onclick=()=>withAction(async()=>{await showClanApplication('existing');if(!state.user)showAuth();});
- $('#accountBtn').onclick=async()=>{
- if(state.user)await withAction(syncApprovedAccess);
- if(!state.user)return showAuth();modal('Dein Hub-Konto',`<div class="form"><p><b>${esc(state.user.handle)}</b> · ${esc(labelClan[state.user.clan]||(state.user.role==='event_manager'?'Event-Team':'Noch keine Clan-Freischaltung'))}</p><p class="muted">Für interne Giveaways und Events muss dich die Clanleitung freischalten.</p><button class="btn outline" id="logoutBtn">Abmelden</button></div>`);
- if(!member()){$('#logoutBtn').insertAdjacentHTML('beforebegin','<button class="btn primary" id="applyFromAccount">Bestehenden Clan-Zugang bestätigen lassen</button>');$('#applyFromAccount').onclick=()=>{closeModal();void showClanApplication('existing');};}
- $('#logoutBtn').onclick=async()=>{await withAction(async()=>{await api('/api/logout',{});closeModal();await refreshUser();await loadPrivate();await loadMarket();await setTab('market');toast('Abgemeldet.');});};};
+ $('#accountBtn').onclick=()=>withAction(showAccount);
  $('#dialogClose').onclick=closeModal;$('#spinClose').onclick=()=>$('#spinDialog').close();
  $('#drawSoundToggle').onclick=()=>{revealSoundEnabled=!revealSoundEnabled;syncRevealAudioButton();if(revealSoundEnabled)audioForReveal();};
  $('#spinDialog').addEventListener('close',()=>{spinCancelled=true;spinSkip=true;$('#drawStage').classList.remove('rolling');revealAudio?.suspend().catch(()=>{});});
@@ -710,6 +729,13 @@ async function init(){
  });};
  $('#memberForm').onsubmit=async e=>{e.preventDefault();await withAction(async()=>{await api('/api/hq/clan/members',formToObj(e.currentTarget));e.currentTarget.reset();await loadTeam();toast('Clan-Zugriff aktualisiert.');});};
  try{await Promise.all([refreshUser(),loadMarket(),loadCommunityLinks()]);await loadPrivate();if(initialTab!=='market')await setTab(initialTab,{historyMode:'none',resetScroll:false});}catch(e){toast('Laden fehlgeschlagen: '+e.message);}
+ const discordReturn=new URLSearchParams(location.search);
+ if(discordReturn.has('discord')){
+  const result=discordReturn.get('discord');discordReturn.delete('discord');
+  history.replaceState(null,'',location.pathname+(discordReturn.size?'?'+discordReturn:'')+location.hash);
+  const notices={linked:'Discord-Konto bestätigt! Die Clanleitung prüft weiterhin deinen Clanrang.',cancelled:'Discord-Verbindung abgebrochen.',expired:'Diese Verbindung ist abgelaufen. Bitte erneut im Konto starten.',in_use:'Dieses Discord-Konto ist bereits mit einem anderen Hub-Konto verbunden. Wende dich an die Clanleitung.',already_linked:'Dein Hub-Konto ist bereits verbunden.',failed:'Discord-Verbindung fehlgeschlagen. Bitte erneut im Konto versuchen.'};
+  if(state.user)await withAction(showAccount);toast(notices[result]||'Bitte prüfe den Verbindungsstatus in deinem Konto.');
+ }
  setInterval(async()=>{$$('[data-countdown]').forEach(x=>x.textContent=timeLeft(x.dataset.countdown));if(state.tab==='giveaways'&&state.giveaways.some(g=>g.status==='open'&&Date.parse(g.ends_at)<=Date.now()))await withAction(loadPrivate);},1000);
 }
 document.addEventListener('DOMContentLoaded',init);
